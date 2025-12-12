@@ -1,0 +1,17 @@
+:root {
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --background-color: #16171D;
+    --text-color: #333333;
+    --font-family: 'Arial, sans-serif';
+    --violet-color: #380366;
+    --vert-color: #00FF37;
+    --bleu-vert-color: #129581;
+    --bleu-marine-color: #033D66;
+    --bleu-fonce-color: #2c3e50;
+    --white-color: #FFFFFF;
+    --noir-color: #1F2236;
+
+    --audiowide-font: 'Audiowide', cursive;
+    
+}

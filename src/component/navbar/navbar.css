@@ -1,0 +1,62 @@
+#navbar {
+    background-color: var(--noir-color);
+    display: flex;
+    position: fixed;
+    top: 0;
+    width: 100%;
+}
+
+#navbar nav {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+}
+
+#navbar nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+}
+
+#navbar nav ul li {
+    margin: 0;
+    color: var(--white-color); 
+    font-size: 30px;
+    font-family: var(--audiowide-font);
+}
+
+#navbar #navbar-contact{
+    animation: CONTACT 2s infinite;
+    text-shadow: 0 0 5px var(--vert-color);
+}
+
+#navbar nav a {
+    color: var(--white-color);
+    padding: 14px 20px;
+    text-decoration: none;
+    text-align: center;
+}
+
+/* ANNIMATION */
+
+@keyframes CONTACT {
+  /* Étape de départ (0% du temps total de l'animation) */
+  0% {
+    text-shadow: 0 0 5px var(--vert-color);
+  }
+
+  /* Étape intermédiaire (50% du temps) */
+  50% {
+    text-shadow: 0 0 40px var(--vert-color);
+  }
+
+  /* Étape de fin (100% du temps) */
+  100% {
+    text-shadow: 0 0 5px var(--vert-color);
+  }
+}
