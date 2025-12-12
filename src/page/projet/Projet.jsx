@@ -1,8 +1,14 @@
 
+// import des composants
+import SectionTrace from "../../component/sectionTrace/SectionTrace"
+
 export default function Projet() {
   return (
-    <div>
-      <h1>Welcome to the Home Page</h1>
-    </div>
+    <>
+      <SectionTrace nombre_trace={1000} />
+    </>
   )
 }
+
+
+    

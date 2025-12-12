@@ -4,6 +4,8 @@
     position: fixed;
     top: 0;
     width: 100%;
+
+   box-shadow: 0 4px 4px 0 var(--bleu-marine, #033D66);
 }
 
 #navbar nav {

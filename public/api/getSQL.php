@@ -39,6 +39,10 @@
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (isset($_GET['table'])) {
             $requete = 'SELECT * FROM ' . $_GET['table'];
+            if (isset($_GET['limit'])) {
+                $limit = (int)$_GET['limit']; // Cast en entier pour éviter les injections SQL
+                $requete .= ' LIMIT ' . $limit;
+            }
             $stmt = $pdo->query($requete); 
             $results = $stmt->fetchAll();
 
