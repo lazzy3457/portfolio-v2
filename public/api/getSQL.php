@@ -39,6 +39,10 @@
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if (isset($_GET['table'])) {
             $requete = 'SELECT * FROM ' . $_GET['table'];
+            if (isset($_GET["id_trace"])) {
+                $id_trace = intval($_GET["id_trace"]); // Cast en entier pour éviter les injections SQL
+                $requete .= ' WHERE id = ' . $id_trace;
+            }
             if (isset($_GET['limit'])) {
                 $limit = (int)$_GET['limit']; // Cast en entier pour éviter les injections SQL
                 $requete .= ' LIMIT ' . $limit;
@@ -46,25 +50,39 @@
             $stmt = $pdo->query($requete); 
             $results = $stmt->fetchAll();
 
-            // 🌟 BOUCLE DE CORRECTION : Désérialisation du champ 'tags'
-            $processedResults = array_map(function($row) {
-                // Tente de décoder le JSON dans le champ 'tags'
-                $tags_decoded = json_decode($row['tags'], true); 
-                
-                // Si le décodage réussit et qu'il y a des données
-                if (json_last_error() === JSON_ERROR_NONE) {
-                    $row['tags'] = $tags_decoded;
-                }
-                // Si le décodage échoue, on pourrait laisser la chaîne ou mettre un tableau vide
-                // Pour l'instant, on laisse la valeur par défaut (la chaîne) en cas d'erreur.
+            $formatted_results = [];
 
-                return $row;
-            }, $results);
-            // 🌟 FIN DE LA BOUCLE DE CORRECTION
+            if ($_GET['table'] == "trace") {
+                
+                // 3. Parcourir les résultats et décoder les chaînes JSON
+                foreach ($results as $row) {
+                    // Convertir la chaîne JSON 'content' en un tableau/objet PHP natif
+                    if (isset($row['content']) && is_string($row['content'])) {
+                        $row['content'] = json_decode($row['content'], true); // 'true' pour tableau associatif
+                    }
+    
+                    // Convertir la chaîne JSON 'img_presentation' en un tableau/objet PHP natif
+                    if (isset($row['img_presentation']) && is_string($row['img_presentation'])) {
+                        $row['img_presentation'] = json_decode($row['img_presentation'], true);
+                    }
+                    
+                    // Convertir la chaîne JSON 'tags' en un tableau/objet PHP natif
+                    if (isset($row['tags']) && is_string($row['tags'])) {
+                        $row['tags'] = json_decode($row['tags'], true);
+                    }
+                    $formatted_results[] = $row;
+                }
+            }
+            else {
+                $formatted_results = $results;
+            }
+
+                
+
 
             // Retourner les résultats traités au format JSON
             header('Content-Type: application/json');
-            echo json_encode($processedResults); // Utilisation des résultats traités
+            echo json_encode($formatted_results); // Utilisation des résultats traités
 
         } else {
             // ... (gestion d'erreur)

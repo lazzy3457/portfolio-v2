@@ -20,14 +20,6 @@
     line-height: 1.6;
 }
 
-#conteneur_trace {
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: row;
-    gap: 20px;
-    justify-content: center;
-    margin-top: 20px;
-}
 
 #conteneur_soft_skills {
     display: flex;

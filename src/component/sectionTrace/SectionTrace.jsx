@@ -1,4 +1,7 @@
 
+// importation des fichiers CSS
+import './sectionTrace.css';
+
 // import des elements de react
 import React, { useState, useEffect } from 'react';
 
@@ -36,8 +39,8 @@ export default function SectionTrace({nombre_trace}) {
             })
             .catch(err => {
                 console.error('Erreur de chargement des traces:', err);
-                setError(err.message);
                 setLoading(false);
+                setError(err.message);
             });
     }, []); // Le tableau vide [] assure que l'effet ne s'exécute qu'une fois au montage.
 
@@ -54,11 +57,12 @@ export default function SectionTrace({nombre_trace}) {
             <div id="conteneur_trace">
                 {traces.map((trace, index) => (
                     <Card_trace 
-                        key={index}
+                        key={trace.id}
                         img={trace.img}
                         title={trace.title}
                         description={trace.description}
                         tags={trace.tags}
+                        id={trace.id}
                     />
                 ))}
             </div>

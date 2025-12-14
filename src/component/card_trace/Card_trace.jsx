@@ -5,10 +5,10 @@ import "./card_trace.css"
 import { Link } from "react-router-dom"
 console.log("Importing Card_trace component");
 
-export default function Card_trace({img, title, description, tags}) {
+export default function Card_trace({img, title, description, tags, id}) {
   return (
     <article className="card_trace">
-        <Link to="/trace">
+        <Link to={`/trace/${id}`}>
             {img ? (
                 <img src={ img } alt={title ?? "image illustration de la trace"} />
             ) : null}
