@@ -60,7 +60,7 @@ export default function Trace() {3
       <>
         {trace.map((item) => (    
           <>
-            <section id="hero">
+            <section id="hero_trace">
               <h1>{ item.title }</h1>
               <div id="img_presentation">
                 {item.img_presentation.map((imgSrc, index) => (
