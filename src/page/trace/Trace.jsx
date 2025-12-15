@@ -15,7 +15,7 @@ export default function Trace() {3
   const [trace, setTrace] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const requeteURL = `http://localhost/portfolio_v/v3/portfolio-v2/public/api/getSQL.php?table=trace&id_trace=${id}`
+  const requeteURL = `http://localhost/portfolio_v/v3/public/api/getSQL.php?table=trace&id_trace=${id}`
 
   console.log(requeteURL)
 
