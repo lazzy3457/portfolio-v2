@@ -29,10 +29,15 @@
         * Ici, vous pouvez exécuter des requêtes SQL
         */
 
-    } catch (\PDOException $e) {
-        // Gestion de l'erreur - On utilise `die` qui va arrêter l'exécution et renvoyer le message d'erreur
-        // Ceci est la seule sortie pour l'échec de connexion
-        die("Échec de la connexion à la base de données: " . $e->getMessage()); 
+    } // Au lieu de : die("Message d'erreur");
+    catch (\PDOException $e) {
+        header('Content-Type: application/json');
+        http_response_code(500);
+        echo json_encode([
+            "error" => "Database connection failed",
+            "details" => $e->getMessage()
+        ]);
+        exit;
     }
 
 
@@ -47,7 +52,8 @@
                 $limit = (int)$_GET['limit']; // Cast en entier pour éviter les injections SQL
                 $requete .= ' LIMIT ' . $limit;
             }
-            $stmt = $pdo->query($requete); 
+            $stmt = $pdo->prepare($requete); 
+            $stmt->execute([]);
             $results = $stmt->fetchAll();
 
             $formatted_results = [];
