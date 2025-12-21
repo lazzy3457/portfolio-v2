@@ -18,7 +18,7 @@ export default function SectionTrace({nombre_trace}) {
     const [traces, setTraces] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const requeteURL = 'http://localhost/portfolio_v/v2/public/api/getSQL.php?table=trace&limit=' + nombre_trace;
+    const requeteURL = 'http://localhost/portfolio_v/v3/public/api/getSQL.php?table=trace&limit=' + nombre_trace;
 
     
 
