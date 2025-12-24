@@ -1,6 +1,6 @@
 
 // import du css
-import './home.css'
+import './home.css' 
 import '../../root.css'
 
 // import des elements de react
