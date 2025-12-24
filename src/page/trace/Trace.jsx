@@ -69,7 +69,7 @@ export default function Trace() {3
               <div id="img_presentation">
                 <div className="defilement-img">
                   {item.img_presentation.map((imgSrc, index) => (
-                    <img key={index} src={`./../src/assets/trace/${id}/${imgSrc}`} alt={`Illustration ${index + 1} de la trace`} />
+                    <img key={index} src={`/assets/trace/${id}/${imgSrc}`} alt={`Illustration ${index + 1} de la trace`} />
                   ))}
                 </div>
               </div>
@@ -128,7 +128,7 @@ function Paragraphe({content_info, id}) {
             {content_paragraphe.images.map((imgSrc, index) => (
               // <p>{`./src/assets/trace/${id}/${imgSrc}`}</p>
               
-              <img key={index} src={`./../src/assets/trace/${id}/${imgSrc}`} alt={`Illustration ${index + 1} du paragraphe`} />
+              <img key={index} src={`/assets/trace/${id}/${imgSrc}`} alt={`Illustration ${index + 1} du paragraphe`} />
             ))}
           </div>
       </div>

@@ -1,4 +1,3 @@
-
 // import du css
 import './home.css' 
 import '../../root.css'
@@ -6,7 +5,7 @@ import '../../root.css'
 // import des elements de react
 import React, { useState, useEffect } from 'react';
 
-// import des images
+// import des images statiques (Vite les optimisera)
 import photo_moi from '../../assets/loic_photo.png'
 
 // import des composants
@@ -24,6 +23,7 @@ export default function Home() {
                     <img src={photo_moi} alt="Photo de Loïc Merlhe" title='ouioui'/>
                 </div>
             </section>
+            
             <SectionConnaissances />
             <Softskills />
             <SectionTrace nombre_trace={3} />
@@ -32,51 +32,54 @@ export default function Home() {
 }   
 
 function SectionConnaissances() {
-    const connaissances =["HTML", "CSS", "JavaScript", "PHP", "React"];
-    const logiciel =["PremierePro", "Illustrator", "Figma", "Blender", "VisualStudioCode"];
+    const connaissances = ["HTML", "CSS", "JavaScript", "PHP", "React"];
+    const logiciel = ["PremierePro", "Illustrator", "Figma", "Blender", "VisualStudioCode"];
+
     return (
         <section id="connaissances">
-            {/* language */}
+            {/* Langage */}
             <div id="conteneur_langage">
                 <h2>Langage</h2>
                 <div id="conteneur_langage_img">
                     {connaissances.map((langage) => (
                         <img 
                             key={langage}
-                            src={`./src/assets/langage/${langage}.svg`} 
+                            /* ✅ Chemin corrigé : accès direct au dossier public */
+                            src={`/assets/langage/${langage}.svg`} 
                             alt={langage}
                         />
                     ))}
-                </div>
+                </div>  
             </div>
-            {/* logiciel */}
+
+            {/* Logiciel */}
             <div id="conteneur_logiciel">
                 <h2>Logiciel</h2>
                 <div id="conteneur_logiciel_img">
-                    {logiciel.map((logiciel) => (
+                    {logiciel.map((item) => (
                         <img 
-                            key={logiciel}
-                            src={`./src/assets/logiciel/${logiciel}.svg`} 
-                            alt={logiciel} 
+                            key={item}
+                            /* ✅ Chemin corrigé : accès direct au dossier public */
+                            src={`/assets/logiciel/${item}.svg`} 
+                            alt={item} 
                         />
                     ))}
                 </div>
             </div>
-
         </section>
     )
 }   
 
 function Softskills() {
-    const soft_skills =["Créatif", "Travail en équipe", "Soif de savoir", "Passionné", "Curieux", "Ponctuel", "Polyvalent"];
+    const soft_skills = ["Créatif", "Travail en équipe", "Soif de savoir", "Passionné", "Curieux", "Ponctuel", "Polyvalent"];
 
     return (
         <section id="soft_skills">
             <h2>Soft Skills</h2>    
             <div id="conteneur_soft_skills">
-                {/* Contenu des soft skills ici */}
                 {soft_skills.map((skill) => (
                     <SpanSoftSkill 
+                        key={skill} // ✅ Toujours ajouter une key ici aussi
                         name={skill}
                     />
                 ))}

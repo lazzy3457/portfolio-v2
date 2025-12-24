@@ -49,7 +49,7 @@ function SectionResaux() {
 function Reseau ({ name, link }) {
     return (
         <Link to = {link} className='lien'> 
-            <img src={`./src/assets/reseau/${name}.png`} alt={name} />
+            <img src={`/assets/reseau/${name}.png`} alt={name} />
         </Link>
     )
 }

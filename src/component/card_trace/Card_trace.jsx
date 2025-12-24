@@ -10,7 +10,7 @@ export default function Card_trace({img, title, description, tags, id}) {
     <article className="card_trace">
         <Link to={`/trace/${id}`}>
             {img ? (
-                <img src={`./../src/assets/trace/${id}/${img}`}  alt={title ?? "image illustration de la trace"} />
+                <img src={`/assets/trace/${id}/${img}`}  alt={title ?? "image illustration de la trace"} />
             ) : null}
             <div className="info">
                 <Tags liste_tags={ tags } />
