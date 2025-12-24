@@ -6,7 +6,7 @@ import './sectionTrace.css';
 import React, { useState, useEffect } from 'react';
 
 // import des composants
-import Card_trace from '../card_trace/card_trace.jsx'
+import Card_trace from '../card_trace/Card_trace.jsx';
 
 export default function SectionTrace({nombre_trace}) {
 

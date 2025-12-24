@@ -14,7 +14,7 @@ export default function Trace() {3
 
   const params = useParams();
   const id = params.id;
-  console.log ("nengkljqsfkdjbgbkmsdfmbj", id)
+  // console.log ("nengkljqsfkdjbgbkmsdfmbj", id)
   const [trace, setTrace] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,7 +22,7 @@ export default function Trace() {3
 
   const requeteURL = `${Url_api_getSQL}?table=trace&id_trace=${id}`
 
-  console.log(requeteURL)
+  // console.log(requeteURL)
 
   useEffect(() => {
     fetch(requeteURL)
@@ -46,9 +46,9 @@ export default function Trace() {3
       console.error("Error fetching trace data:", error);
     });
   })
-  console.log("avant teste")
-  console.log("je suis un item", trace)
-  console.log("l'id est ", params.id)
+  // console.log("avant teste")
+  // console.log("je suis un item", trace)
+  // console.log("l'id est ", params.id)
   // console.log("je suis un item img", trace[0].content)
   
   if (loading) {
@@ -66,7 +66,6 @@ export default function Trace() {3
         {trace.map((item) => (    
           <>
             <section id="hero_trace">
-              <h1>{ item.title }</h1>
               <div id="img_presentation">
                 {item.img_presentation.map((imgSrc, index) => (
                   <img key={index} src={`./../src/assets/trace/${id}/${imgSrc}`} alt={`Illustration ${index + 1} de la trace`} />
@@ -74,6 +73,7 @@ export default function Trace() {3
               </div>
             </section>
             <section id="presentation_trace">
+                <h1>{ item.title }</h1>
                 {item.content.map((content_info, index) => (
                   <ContentTrace 
                     index={index} 
@@ -88,7 +88,7 @@ export default function Trace() {3
     )
   }
   else {
-    console.log("je ne suis pas un tableau")
+    // console.log("je ne suis pas un tableau")
   }
 }
 

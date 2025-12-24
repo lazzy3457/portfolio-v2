@@ -3,11 +3,25 @@ main {
   flex-direction: column;
   gap: 50px;
   padding-top: 150px;
-  width: 1440px;
+  /* max-width: 1440px; */
+  width: 90%;
   margin: auto;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--audiowide-font);
   font-weight: 400;
+}
+
+@media screen and (max-width: 1439px) {
+  body {
+    max-width: 1439px;
+  }
+}
+
+
+@media screen and (max-width: 768px) {
+  body {
+    max-width: 768px;
+  }
 }
