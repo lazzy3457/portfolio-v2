@@ -24,10 +24,10 @@
         "images": ["comment.png"],
         "paragraphe": "Pour commencer, j’ai réalisé un mockup détaillé. Cette première étape m’a permis de définir clairement l’organisation des contenus, la hiérarchie des informations et les fonctionnalités essentielles. C’est ici que j’ai posé les bases de l’UX, en réfléchissant aux parcours utilisateurs, à la fluidité de la navigation et à la facilité d’accès aux informations importantes."
       },
-	  {
+      {
         "images": ["moodboard.png"],
-        "paragraphe": "texte moodboard"
-      }
+        "paragraphe": "Une fois cette structure établie, je me suis penché sur l’univers visuel. J’ai construit un moodboard regroupant mes inspirations : des couleurs vert / bleu / violet, un style gaming assumé, des effets néon et un fond sombre pour renforcer les contrastes. Ce choix n’était pas seulement esthétique : il répondait à une volonté de proposer une interface moderne, dynamique et immersive, capable de rendre l’intranet plus engageant."
+      },
       {
         "images": ["composant.png"],
         "paragraphe": "À partir de ce moodboard, j’ai commencé à créer les composants UI indispensables : cartes (cards), barres de navigation, barres de recherche, blocs de contenu, et bien d’autres encore. Chaque élément a été pensé pour être cohérent, lisible et intuitif, afin de créer une expérience utilisateur harmonieuse du début à la fin."
@@ -39,7 +39,7 @@
     "content_paragraphe": [
       {
         "images": [],
-        "paragraphe": "Pour commencer, j’ai réalisé un mockup détaillé. Cette première étape m’a permis de définir clairement l’organisation des contenus, la hiérarchie des informations et les fonctionnalités essentielles. C’est ici que j’ai posé les bases de l’UX, en réfléchissant aux parcours utilisateurs, à la fluidité de la navigation et à la facilité d’accès aux informations importantes."
+        "paragraphe": "Ce travail a été mené au sein de ma première année de BUT MMI, directement dans le cadre d’un projet encadré en conception graphique et UX/UI. J’ai travaillé en autonomie, tout en m’appuyant sur les attentes pédagogiques et les besoins réels des utilisateurs."
       }
     ]
   },

@@ -81,3 +81,25 @@
     
 }
 
+p.amorse {
+    flex: 1;
+}
+
+
+@media screen and (max-width : 768px) {
+    #presentation_trace .conteneur_paragraphe,
+    #presentation_trace .conteneur_paragraphe:nth-child(even),
+    #presentation_trace .conteneur_paragraphe:nth-child(odd) {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    #img_presentation {
+        width: 100%; /* Prend toute la largeur sur mobile */
+    }
+
+    #presentation_trace .conteneur_paragraphe p.paragraphe,
+    #presentation_trace .conteneur_img {
+        width: 100%; /* S'assure que le texte et l'image prennent toute la largeur */
+    }
+}

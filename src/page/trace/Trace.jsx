@@ -1,139 +1,136 @@
-
-// import css
 import './trace.css';
-
-//
-
-
-// import element react
 import { useParams } from "react-router-dom";
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 
-export default function Trace() {3
-
-
-  const params = useParams();
-  const id = params.id;
-  // console.log ("nengkljqsfkdjbgbkmsdfmbj", id)
+export default function Trace() {
+  const { id } = useParams(); // Plus simple que params.id
   const [trace, setTrace] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const Url_api_getSQL = "http://localhost/portfolio_v/v3/public/api/getSQL.php";
 
-  const requeteURL = `${Url_api_getSQL}?table=trace&id_trace=${id}`
-
-  // console.log(requeteURL)
+  // ✅ Correction de l'URL (vérifie bien si c'est /api/ ou /api/api/ sur ton serveur)
+  const Url_api_getSQL = "https://loic-merlhe.wstr.fr/api/getSQL.php";
+  const requeteURL = `${Url_api_getSQL}?table=trace&id_trace=${id}`;
 
   useEffect(() => {
+    setLoading(true); // Relance le chargement si l'ID change
+    
     fetch(requeteURL)
-    .then (response => response.json())
-    .then (data => {
-      //  // ✅ VÉRIFIEZ et parsez si la donnée est un tableau non vide
-      //   const processedData = data.map(item => ({
-      //   ...item, // Garde toutes les autres propriétés
-      //   // Tente de parser la chaîne JSON en un tableau JavaScript
-      //   img_presentation: JSON.parse(item.img_presentation),
-      //   content: JSON.parse(item.content)
-      // }));
-      setTrace(data);
-      setLoading(false);
-      console.log("vous etes sur le page trace")
-      console.log("Trace data:", data);
-    })
-    .catch (error => {
-      setLoading(false);
-      setError(error.message);
-      console.error("Error fetching trace data:", error);
-    });
-  })
-  // console.log("avant teste")
-  // console.log("je suis un item", trace)
-  // console.log("l'id est ", params.id)
-  // console.log("je suis un item img", trace[0].content)
-  
-  if (loading) {
-          return <p>Chargement des traces...</p>;
-      }
-    if (error) {
-        return <p>Erreur lors du chargement : {error}</p>;
-    }
-  
-  const dataToMap = trace;
+      .then(response => {
+        if (!response.ok) throw new Error("Erreur réseau");
+        return response.json();
+      })
+      .then(data => {
+        // Le décodage JSON est maintenant géré par ton API PHP
+        // On vérifie juste que data est bien un tableau
+        setTrace(Array.isArray(data) ? data : [data]);
+        setLoading(false);
+      })
+      .catch(error => {
+        setLoading(false);
+        setError(error.message);
+        console.error("Error fetching trace data:", error);
+      });
+  }, [id]); // ✅ Ajout du tableau de dépendances pour éviter la boucle infinie
 
-  if (Array.isArray(dataToMap)) {
-    return (
-      <>
-        {trace.map((item) => (    
-          <>
-            <section id="hero_trace">
-              <div id="img_presentation">
-                <div className="defilement-img">
-                  {item.img_presentation.map((imgSrc, index) => (
-                    <img key={index} src={`/assets/trace/${id}/${imgSrc}`} alt={`Illustration ${index + 1} de la trace`} />
-                  ))}
-                </div>
-              </div>
-            </section>
-            <section id="presentation_trace">
-                <h1>{ item.title }</h1>
-                {item.content.map((content_info, index) => (
-                  <ContentTrace 
-                    index={index} 
-                    content_info={content_info} 
-                    id={id}
-                  /> 
+  if (loading) return <p className="status">Chargement des traces...</p>;
+  if (error) return <p className="status error">Erreur : {error}</p>;
+  if (trace.length === 0) return <p className="status">Aucun projet trouvé.</p>;
+
+  return (
+    <>
+      {trace.map((item, mainIndex) => (
+        <React.Fragment key={mainIndex}>
+          <section id="hero_trace">
+            <div id="img_presentation">
+              <div className="defilement-img">
+                {/* Vérifie que img_presentation est bien un tableau */}
+                {Array.isArray(item.img_presentation) && item.img_presentation.map((imgSrc, index) => (
+                  <img 
+                    key={index} 
+                    src={`/assets/trace/${id}/${imgSrc}`} 
+                    alt={`Illustration ${index + 1}`} 
+                  />
                 ))}
-            </section>
-          </>
-        ))}
-      </>
-    )
-  }
-  else {
-    // console.log("je ne suis pas un tableau")
-  }
+              </div>
+            </div>
+          </section>
+
+          <section id="presentation_trace">
+            <h1>{item.title}</h1>
+            {Array.isArray(item.content) && item.content.map((content_info, index) => (
+              <ContentTrace 
+                key={index}
+                index={index} 
+                content_info={content_info} 
+                id={id}
+              />
+            ))}
+          </section>
+        </React.Fragment>
+      ))}
+    </>
+  );
 }
 
-function ContentTrace({index, content_info, id}) {
+// --- SOUS-COMPOSANTS ---
 
+function ContentTrace({ index, content_info, id }) {
+  // L'amorce est le premier élément du tableau content
   if (index === 0) {
-    return <Amorse content_info={content_info} />
-  } else  {
-    return <Paragraphe content_info={content_info} id={id} />
+    return <Amorse content_info={content_info} />;
   }
+
+  // Accès sécurisé au premier élément du tableau de paragraphes
+  const hasImages = content_info.content_paragraphe?.[0]?.images?.length > 0;
+
+  if (hasImages) {
+    return <ParagrapheImage content_info={content_info} id={id} />;
+  }
+  
+  return <Paragraphe content_info={content_info} />;
 }
 
-function Amorse({content_info}) {
+function Amorse({ content_info }) {
+  const texte = content_info.content_paragraphe?.[0]?.paragraphe;
   return (
     <div className="conteneur_paragraphe">
-      <p className="amorse">
-        {content_info.content_paragraphe[0].paragraphe}
-      </p>
+      <p className="amorse">{texte}</p>
     </div>
-  )
+  );
 }
 
-function Paragraphe({content_info, id}) {
+function ParagrapheImage({ content_info, id }) {
   return (
     <div className="content_info">
-      <h2>
-        { content_info.title }
-      </h2>
-      {content_info.content_paragraphe.map((content_paragraphe, index) => (
-        <div className="conteneur_paragraphe">
-          <p className="paragraphe">
-            { content_paragraphe.paragraphe }
-          </p>
+      <h2>{content_info.title}</h2>
+      {content_info.content_paragraphe?.map((section, idx) => (
+        <div key={idx} className="conteneur_paragraphe">
+          <p className="paragraphe">{section.paragraphe}</p>
           <div className="conteneur_img">
-            {content_paragraphe.images.map((imgSrc, index) => (
-              // <p>{`./src/assets/trace/${id}/${imgSrc}`}</p>
-              
-              <img key={index} src={`/assets/trace/${id}/${imgSrc}`} alt={`Illustration ${index + 1} du paragraphe`} />
+            {section.images?.map((imgSrc, imgIdx) => (
+              <img 
+                key={imgIdx} 
+                src={`/assets/trace/${id}/${imgSrc}`} 
+                alt="Illustration paragraphe" 
+              />
             ))}
           </div>
-      </div>
+        </div>
       ))}
-      
     </div>
-  )
+  );
+}
+
+function Paragraphe({ content_info }) {
+  return (
+    <div className="content_info">
+      <h2>{content_info.title}</h2>
+      {content_info.content_paragraphe?.map((section, idx) => (
+        <div key={idx} className="conteneur_paragraphe">
+          <p className="paragraphe">{section.paragraphe}</p>
+        </div>
+      ))}
+    </div>
+  );
 }

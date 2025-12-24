@@ -18,8 +18,8 @@ export default function SectionTrace({nombre_trace}) {
     const [traces, setTraces] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const requeteURL = 'http://localhost/portfolio_v/v3/public/api/getSQL.php?table=trace&limit=' + nombre_trace;
-
+    const requeteURL = `https://loic-merlhe.wstr.fr/api/getSQL.php?table=trace&limit=${nombre_trace}`;
+    // Remplace "loicmerlhe.fr/api" par le vrai chemin vers ton fichier PHP sur ton hébergeur
     
 
     // 2. Utiliser useEffect pour effectuer le fetch une seule fois au montage
