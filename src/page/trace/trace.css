@@ -1,3 +1,5 @@
+
+/* SECTION HERO */
 #hero_trace {
     display: flex;
     flex-direction: column;
@@ -13,7 +15,22 @@
     flex: 1;
     width: 75%;
     align-items: center;
-}  
+} 
+
+
+/* SECTION PRESENTATION TRACE */
+
+#presentation_trace {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.content_info {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
 
 #img_presentation img {
     width: 100%;
@@ -26,9 +43,19 @@
 
     align-items: center;
     justify-content: center;
-    
+
+    gap: 30px;
 
 }
+
+#presentation_trace .conteneur_paragraphe:nth-child(odd) {
+    flex-direction: row;
+}
+#presentation_trace .conteneur_paragraphe:nth-child(even) {
+    flex-direction: row-reverse;
+}
+
+
 
 #presentation_trace .conteneur_paragraphe img {
     /* flex: 1; */
@@ -38,13 +65,17 @@
 }
 
 #presentation_trace .conteneur_img {
-    width: 50%;
+    /* width: 50%; */
+    flex: 1;
 }
 
+
+
 #presentation_trace .conteneur_paragraphe p {
-    width: 50%;
+    /* width: 50%; */
     flex-basis: 50%;
     display: flex;
+    flex: 2;
 
     font-size: 20px;
     

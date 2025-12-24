@@ -9,7 +9,7 @@
 
     font-family: var(--audiowide-font);
     font-weight: 400;
-}   
+} 
 
 #presentation {
     max-width: 600px;
@@ -54,8 +54,48 @@
 #conteneur_langage_img, #conteneur_logiciel_img {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: space-around;
     gap: 100px;
     align-items: center;
     margin-top: 15px;
+} 
+
+
+@media screen and (max-width: 1200px) {
+    #hero {
+        flex-direction: column-reverse;
+    }
+
+} 
+
+@media screen and (max-width: 768px) {
+    #connaissance img {
+        width: 50px;
+    }
+
+    #hero img {
+        width: 100%;
+    }
+    #hero h1{
+        font-size: 1.25rem;
+    }
+
+    #hero p {
+        font-size: 0.75rem;
+    }
+
+    #conteneur_langage_img, #conteneur_logiciel_img {
+        gap: 20px;
+    }
+
+    #conteneur_langage_img img, #conteneur_logiciel_img img {
+        max-width: 75px;
+        /* width: 100%; */
+        flex: 1;
+    }
+
+    .soft_skill  {
+        font-size: 0.75rem;
+        padding: 8px 20px;
+    }
 }

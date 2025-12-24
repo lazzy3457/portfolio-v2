@@ -5,6 +5,8 @@
     top: 0;
     width: 100%;
 
+    z-index: 100;
+
    box-shadow: 0 4px 4px 0 var(--bleu-marine, #033D66);
 }
 
@@ -60,5 +62,14 @@
   /* Étape de fin (100% du temps) */
   100% {
     text-shadow: 0 0 5px var(--vert-color);
+  }
+}
+
+/* REDIMENTION */
+
+@media screen and (max-width: 768px) {
+  #navbar nav a{
+    font-size: 20px;
+    padding: 7px 10px;
   }
 }

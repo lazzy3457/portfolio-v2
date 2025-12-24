@@ -14,9 +14,11 @@ export default function Contact() {
         <>
             <section id="cv_video">
                 <h1>Contact</h1>
-                <video controls>
-                    <source src={cv_video_francais} type="video/mp4" />
-                </video>
+                <div id="conteneur-video">
+                    <video controls>
+                        <source src={cv_video_francais} type="video/mp4" />
+                    </video>
+                </div>  
             </section>
             <SectionResaux />
         </>

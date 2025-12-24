@@ -67,9 +67,11 @@ export default function Trace() {3
           <>
             <section id="hero_trace">
               <div id="img_presentation">
-                {item.img_presentation.map((imgSrc, index) => (
-                  <img key={index} src={`./../src/assets/trace/${id}/${imgSrc}`} alt={`Illustration ${index + 1} de la trace`} />
-                ))}
+                <div className="defilement-img">
+                  {item.img_presentation.map((imgSrc, index) => (
+                    <img key={index} src={`./../src/assets/trace/${id}/${imgSrc}`} alt={`Illustration ${index + 1} de la trace`} />
+                  ))}
+                </div>
               </div>
             </section>
             <section id="presentation_trace">
