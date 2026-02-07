@@ -39,8 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['table'])) {
         
         // --- SÉCURITÉ : Liste blanche des tables ---
-        // Empêche un utilisateur d'accéder à des tables sensibles via l'URL
-        $allowed_tables = ['trace', 'users', 'projects']; // Ajoutez vos tables ici
+        $allowed_tables = ['trace', 'users', 'projects'];
         $table = $_GET['table'];
 
         if (!in_array($table, $allowed_tables)) {
@@ -49,9 +48,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             exit;
         }
 
-        // Construction de la requête avec des placeholders pour la sécurité
+        // Construction de la requête avec filtres dynamiques
         $requete = "SELECT * FROM `$table` WHERE 1=1";
         $params = [];
+
+        // Filtre recherche par mot-clé (Titre ou Description)
+        if (isset($_GET['search']) && !empty($_GET['search'])) {
+            $requete .= ' AND (title LIKE :search OR description LIKE :search)';
+            $params['search'] = '%' . $_GET['search'] . '%';
+        }
+
+        // Filtre par Tag (Spécifique aux colonnes JSON)
+        if (isset($_GET['tag']) && !empty($_GET['tag'])) {
+            $requete .= ' AND JSON_CONTAINS(tags, :tag)';
+            $params['tag'] = json_encode($_GET['tag']);
+        }
 
         if (isset($_GET["id_trace"])) {
             $requete .= ' AND id = :id';
@@ -76,7 +87,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     foreach ($json_fields as $field) {
                         if (isset($row[$field]) && is_string($row[$field])) {
                             $decoded = json_decode($row[$field], true);
-                            // On ne remplace que si le JSON est valide
                             if (json_last_error() === JSON_ERROR_NONE) {
                                 $row[$field] = $decoded;
                             }

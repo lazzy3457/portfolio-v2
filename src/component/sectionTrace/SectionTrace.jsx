@@ -1,71 +1,48 @@
+import { useEffect, useState } from "react";
+import Card_trace from "../card_trace/Card_trace";
+import SearchBar from "../searchBar/SearchBar";
+import "./SectionTrace.css";
 
-// importation des fichiers CSS
-import './sectionTrace.css';
-
-// import des elements de react
-import React, { useState, useEffect } from 'react';
-
-// import des composants
-import Card_trace from '../card_trace/Card_trace.jsx';
-
-export default function SectionTrace({nombre_trace}) {
-
-    if (nombre_trace === undefined) {
-        nombre_trace = 3; // Valeur par défaut si aucune valeur n'est fournie
-    }
-
-    // 1. Initialiser l'état pour stocker les traces. Un tableau vide par défaut.
+export default function SectionTrace() {
     const [traces, setTraces] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const requeteURL = `https://loic-merlhe.wstr.fr/api/getSQL.php?table=trace&limit=${nombre_trace}`;
-    // Remplace "loicmerlhe.fr/api" par le vrai chemin vers ton fichier PHP sur ton hébergeur
-    
+    const [searchTerm, setSearchTerm] = useState("");
 
-    // 2. Utiliser useEffect pour effectuer le fetch une seule fois au montage
     useEffect(() => {
-        fetch(requeteURL)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
-                }
-                return response.json();
-            })
-            // 3. Stocker les données dans l'état
+        // On encode le terme pour gérer les espaces et caractères spéciaux
+        const query = encodeURIComponent(searchTerm);
+        // On appelle l'API avec le paramètre 'search'
+        const url = `http://localhost/ton_projet/getSQL.php?table=trace&search=${query}`;
+        
+        fetch(url)
+            .then(res => res.json())
             .then(data => {
-                // Assurez-vous que data est un tableau si vous voulez l'utiliser directement avec map
-                setTraces(data);
-                setLoading(false);
+                if (Array.isArray(data)) {
+                    setTraces(data);
+                }
             })
-            .catch(err => {
-                console.error('Erreur de chargement des traces:', err);
-                setLoading(false);
-                setError(err.message);
-            });
-    }, []); // Le tableau vide [] assure que l'effet ne s'exécute qu'une fois au montage.
+            .catch(err => console.error("Erreur lors de la récupération :", err));
+    }, [searchTerm]); // Re-filtre dès que l'utilisateur tape une lettre
 
-    // 4. Afficher les états de chargement/erreur
-    if (loading) {
-        return <p>Chargement des traces...</p>;
-    }
-    if (error) {
-        return <p>Erreur lors du chargement : {error}</p>;
-    }
     return (
-        <section id="projet">
-            <h2>Mes Projets</h2>
+        <section id="section_traces">
+            <SearchBar onSearch={setSearchTerm} />
+            
             <div id="conteneur_trace">
-                {traces.map((trace, index) => (
-                    <Card_trace 
-                        key={trace.id}
-                        img={trace.img}
-                        title={trace.title}
-                        description={trace.description}
-                        tags={trace.tags}
-                        id={trace.id}
-                    />
-                ))}
+                {traces.length > 0 ? (
+                    traces.map(trace => (
+                        <Card_trace 
+                            key={trace.id}
+                            id={trace.id}
+                            title={trace.title}
+                            description={trace.description}
+                            img={trace.img}
+                            tags={trace.tags}
+                        />
+                    ))
+                ) : (
+                    <p>Aucun résultat trouvé pour "{searchTerm}"</p>
+                )}
             </div>
         </section>
-    )
+    );
 }
