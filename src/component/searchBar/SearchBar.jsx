@@ -3,27 +3,45 @@ import { useState } from 'react';
 export default function SearchBar({ onSearch }) {
     const [query, setQuery] = useState("");
 
-    const handleChange = (e) => {
-        const value = e.target.value;
+    const updateSearch = (value) => {
         setQuery(value);
-        onSearch(value); // Notifie le parent du changement
+        onSearch(value); // Déclenche le fetch dans le parent
     };
 
     return (
-        <div className="search_bar_container" style={{ margin: '20px auto', maxWidth: '500px' }}>
-            <input 
-                type="text" 
-                placeholder="Rechercher par titre ou tag (ex: fraise)..." 
-                value={query}
-                onChange={handleChange}
-                style={{
-                    width: '100%',
-                    padding: '12px 20px',
-                    borderRadius: '25px',
-                    border: '2px solid #ddd',
-                    fontSize: '16px'
-                }}
-            />
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '20px' }}>
+            <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+                <input 
+                    type="text" 
+                    placeholder="Rechercher (ex: fraise, design...)" 
+                    value={query}
+                    onChange={(e) => updateSearch(e.target.value)}
+                    style={{
+                        width: '100%',
+                        padding: '12px 45px 12px 15px',
+                        borderRadius: '25px',
+                        border: '1px solid #ddd'
+                    }}
+                />
+                {query && (
+                    <button 
+                        onClick={() => updateSearch("")}
+                        style={{
+                            position: 'absolute',
+                            right: '15px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '18px',
+                            cursor: 'pointer',
+                            color: '#999'
+                        }}
+                    >
+                        ✕
+                    </button>
+                )}
+            </div>
         </div>
     );
-}
+}   

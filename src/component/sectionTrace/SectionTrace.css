@@ -6,3 +6,43 @@
     justify-content: center;
     margin-top: 20px;
 }
+
+/* .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+.controls input[type="search"] {
+    width: 90%;
+    max-width: 640px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.tags-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.tag-button {
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid #bbb;
+    background: #f5f5f5;
+    cursor: pointer;
+}
+
+.tag-button.selected {
+    background: #007acc;
+    color: white;
+    border-color: #0064b4;
+}
+
+.no-tags {
+    color: #666;
+} */

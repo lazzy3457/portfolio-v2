@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Card_trace from "../card_trace/Card_trace";
 import SearchBar from "../searchBar/SearchBar";
+
 import "./SectionTrace.css";
 
 export default function SectionTrace() {
@@ -8,23 +9,17 @@ export default function SectionTrace() {
     const [searchTerm, setSearchTerm] = useState("");
 
     useEffect(() => {
-        // On encode le terme pour gérer les espaces et caractères spéciaux
-        const query = encodeURIComponent(searchTerm);
-        // On appelle l'API avec le paramètre 'search'
-        const url = `http://localhost/ton_projet/getSQL.php?table=trace&search=${query}`;
-        
-        fetch(url)
+        // Si searchTerm est vide, l'URL sera "...search=", ce qui affiche tout via PHP
+        fetch(`https://loic-merlhe.wstr.fr/api/getSQL.php?table=trace&search=${encodeURIComponent(searchTerm)}`)
             .then(res => res.json())
             .then(data => {
-                if (Array.isArray(data)) {
-                    setTraces(data);
-                }
+                if (Array.isArray(data)) setTraces(data);
             })
-            .catch(err => console.error("Erreur lors de la récupération :", err));
-    }, [searchTerm]); // Re-filtre dès que l'utilisateur tape une lettre
+            .catch(err => console.error("Erreur:", err));
+    }, [searchTerm]);
 
     return (
-        <section id="section_traces">
+        <section>
             <SearchBar onSearch={setSearchTerm} />
             
             <div id="conteneur_trace">
@@ -40,7 +35,7 @@ export default function SectionTrace() {
                         />
                     ))
                 ) : (
-                    <p>Aucun résultat trouvé pour "{searchTerm}"</p>
+                    <p style={{ textAlign: 'center', width: '100%' }}>Aucun projet trouvé.</p>
                 )}
             </div>
         </section>

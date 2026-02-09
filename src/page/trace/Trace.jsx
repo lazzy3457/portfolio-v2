@@ -3,134 +3,85 @@ import { useParams } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 
 export default function Trace() {
-  const { id } = useParams(); // Plus simple que params.id
-  const [trace, setTrace] = useState([]);
+  const { id } = useParams();
+  const [trace, setTrace] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ✅ Correction de l'URL (vérifie bien si c'est /api/ ou /api/api/ sur ton serveur)
   const Url_api_getSQL = "https://loic-merlhe.wstr.fr/api/getSQL.php";
+  // Vérifiez bien que le paramètre dans getSQL.php est id_trace
   const requeteURL = `${Url_api_getSQL}?table=trace&id_trace=${id}`;
 
   useEffect(() => {
-    setLoading(true); // Relance le chargement si l'ID change
-    
+    setLoading(true);
+    console.log("Tentative de récupération pour l'ID:", id);
+
     fetch(requeteURL)
       .then(response => {
-        if (!response.ok) throw new Error("Erreur réseau");
+        if (!response.ok) throw new Error(`Erreur serveur: ${response.status}`);
         return response.json();
       })
       .then(data => {
-        // Le décodage JSON est maintenant géré par ton API PHP
-        // On vérifie juste que data est bien un tableau
-        setTrace(Array.isArray(data) ? data : [data]);
+        console.log("Données reçues de l'API:", data);
+
+        // L'API peut renvoyer un tableau d'un objet ou l'objet directement
+        if (Array.isArray(data) && data.length > 0) {
+          setTrace(data[0]);
+        } else if (data && !Array.isArray(data) && !data.error) {
+          setTrace(data);
+        } else {
+          setError("Trace introuvable dans la base de données.");
+        }
         setLoading(false);
       })
       .catch(error => {
+        console.error("Erreur Fetch:", error);
+        setError("Impossible de contacter l'API.");
         setLoading(false);
-        setError(error.message);
-        console.error("Error fetching trace data:", error);
       });
-  }, [id]); // ✅ Ajout du tableau de dépendances pour éviter la boucle infinie
+  }, [id, requeteURL]);
 
-  if (loading) return <p className="status">Chargement des traces...</p>;
-  if (error) return <p className="status error">Erreur : {error}</p>;
-  if (trace.length === 0) return <p className="status">Aucun projet trouvé.</p>;
+  if (loading) return <div className="loading">Chargement de la trace...</div>;
+  if (error) return <div className="error" style={{color: 'red', textAlign: 'center', marginTop: '50px'}}>{error}</div>;
+  if (!trace) return null;
 
   return (
-    <>
-      {trace.map((item, mainIndex) => (
-        <React.Fragment key={mainIndex}>
-          <section id="hero_trace">
-            <div id="img_presentation">
-              <div className="defilement-img">
-                {/* Vérifie que img_presentation est bien un tableau */}
-                {Array.isArray(item.img_presentation) && item.img_presentation.map((imgSrc, index) => (
-                  <img 
-                    key={index} 
-                    src={`/assets/trace/${id}/${imgSrc}`} 
-                    alt={`Illustration ${index + 1}`} 
-                  />
-                ))}
-              </div>
-            </div>
-          </section>
-
-          <section id="presentation_trace">
-            <h1>{item.title}</h1>
-            {Array.isArray(item.content) && item.content.map((content_info, index) => (
-              <ContentTrace 
-                key={index}
-                index={index} 
-                content_info={content_info} 
-                id={id}
-              />
+    <main className="page_trace">
+      <header className="header_trace">
+        <h1>{trace.title}</h1>
+        <p className="description_header">{trace.description}</p>
+        <div className="tags_container" style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
+            {Array.isArray(trace.tags) && trace.tags.map((tag, index) => (
+                <span key={index} className="tag_item" style={{background: '#eee', padding: '5px 10px', borderRadius: '15px'}}>
+                    {tag}
+                </span>
             ))}
-          </section>
-        </React.Fragment>
-      ))}
-    </>
-  );
-}
+        </div>
+      </header>
 
-// --- SOUS-COMPOSANTS ---
-
-function ContentTrace({ index, content_info, id }) {
-  // L'amorce est le premier élément du tableau content
-  if (index === 0) {
-    return <Amorse content_info={content_info} />;
-  }
-
-  // Accès sécurisé au premier élément du tableau de paragraphes
-  const hasImages = content_info.content_paragraphe?.[0]?.images?.length > 0;
-
-  if (hasImages) {
-    return <ParagrapheImage content_info={content_info} id={id} />;
-  }
-  
-  return <Paragraphe content_info={content_info} />;
-}
-
-function Amorse({ content_info }) {
-  const texte = content_info.content_paragraphe?.[0]?.paragraphe;
-  return (
-    <div className="conteneur_paragraphe">
-      <p className="amorse">{texte}</p>
-    </div>
-  );
-}
-
-function ParagrapheImage({ content_info, id }) {
-  return (
-    <div className="content_info">
-      <h2>{content_info.title}</h2>
-      {content_info.content_paragraphe?.map((section, idx) => (
-        <div key={idx} className="conteneur_paragraphe">
-          <p className="paragraphe">{section.paragraphe}</p>
-          <div className="conteneur_img">
-            {section.images?.map((imgSrc, imgIdx) => (
-              <img 
-                key={imgIdx} 
-                src={`/assets/trace/${id}/${imgSrc}`} 
-                alt="Illustration paragraphe" 
-              />
+      <section className="contenu_trace">
+        {/* Vérification du champ 'content' qui contient vos sections */}
+        {Array.isArray(trace.content) ? trace.content.map((section, index) => (
+          <div key={index} className="section_block" style={{marginBottom: '40px'}}>
+            <h2>{section.title}</h2>
+            {section.content_paragraphe?.map((block, idx) => (
+              <div key={idx} className="paragraphe_group">
+                <p>{block.paragraphe}</p>
+                <div className="images_grid" style={{display: 'flex', gap: '10px', marginTop: '10px'}}>
+                  {block.images?.map((imgName, i) => (
+                    <img 
+                      key={i} 
+                      src={`https://loic-merlhe.wstr.fr/assets/trace/${id}/${imgName}`} 
+                      alt="Illustration"
+                      style={{maxWidth: '100%', height: 'auto'}}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Paragraphe({ content_info }) {
-  return (
-    <div className="content_info">
-      <h2>{content_info.title}</h2>
-      {content_info.content_paragraphe?.map((section, idx) => (
-        <div key={idx} className="conteneur_paragraphe">
-          <p className="paragraphe">{section.paragraphe}</p>
-        </div>
-      ))}
-    </div>
+        )) : <p>Aucun contenu détaillé disponible.</p>}
+      </section>
+    </main>
   );
 }
