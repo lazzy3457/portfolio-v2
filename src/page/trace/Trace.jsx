@@ -8,6 +8,7 @@ export default function Trace() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // console.log(id);:
   const Url_api_getSQL = "https://loic-merlhe.wstr.fr/api/getSQL.php";
   // Vérifiez bien que le paramètre dans getSQL.php est id_trace
   const requeteURL = `${Url_api_getSQL}?table=trace&id_trace=${id}`;
@@ -69,10 +70,12 @@ export default function Trace() {
                 <p>{block.paragraphe}</p>
                 <div className="images_grid" style={{display: 'flex', gap: '10px', marginTop: '10px'}}>
                   {block.images?.map((imgName, i) => (
+                    // console.log(imgName)
                     <img 
                       key={i} 
+                      // src={`https://loic-merlhe.wstr.fr/assets/trace/${id}/${imgName}`} 
                       src={`https://loic-merlhe.wstr.fr/assets/trace/${id}/${imgName}`} 
-                      alt="Illustration"
+                      alt={`Illustration ${imgName}`}
                       style={{maxWidth: '100%', height: 'auto'}}
                     />
                   ))}
