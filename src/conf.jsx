@@ -1,4 +1,3 @@
+const Url_api_getSQL = "https://loic-merlhe.wstr.fr/api/getSQL.php";
 
-    const Url_api_getSQL = "http://localhost/portfolio_v/v3/public/api/getSQL.php";
-
-    export default Url_api_getSQL;
+export default Url_api_getSQL;

@@ -1,13 +1,6 @@
-
-// import le css
 import '../../root.css'
 import './Contact.css'
-
-// import des videos
 import cv_video_francais from "../../assets/cv_video/cv_video_francais.mp4"
-import cv_video_anglais from "../../assets/cv_video/cv_video_anglais.mp4"
-import { Link } from 'react-router-dom'
-
 
 export default function Contact() {
     return (
@@ -18,39 +11,37 @@ export default function Contact() {
                     <video controls>
                         <source src={cv_video_francais} type="video/mp4" />
                     </video>
-                </div>  
+                </div>
             </section>
             <SectionResaux />
         </>
-
     )
-} 
+}
 
 function SectionResaux() {
-    const reseaux = [{name: "Linkedin", link: ""},
-                    {name: "Github", link: ""}, 
-                    {name: "Instagram", link: ""}];
-
+    const reseaux = [
+        { name: "Linkedin", link: "" },
+        { name: "Github", link: "" },
+        { name: "Instagram", link: "" },
+    ];
 
     return (
         <section id="section_reseaux_sociaux">
             {reseaux.map((reseau) => (
-                <Reseau 
+                <Reseau
                     key={reseau.name}
                     name={reseau.name}
                     link={reseau.link}
                 />
-            ))} 
+            ))}
         </section>
     )
 }
-            
 
-function Reseau ({ name, link }) {
+function Reseau({ name, link }) {
     return (
-        <Link to = {link} className='lien'> 
+        <a href={link || "#"} className='lien' target="_blank" rel="noopener noreferrer">
             <img src={`/assets/reseau/${name}.png`} alt={name} />
-        </Link>
+        </a>
     )
 }
-

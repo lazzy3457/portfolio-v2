@@ -1,22 +1,21 @@
-
 /* SECTION HERO */
 #hero_trace {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center; 
-    /* display: grid; */
-
+    justify-content: center;
 }
 
-#hero_trace #img_presentation  {
+#hero_trace #img_presentation {
     display: flex;
     justify-content: center;
-    flex: 1;
-    width: 75%;
+    width: 100%;
     align-items: center;
-} 
+}
 
+#img_presentation img {
+    width: 100%;
+}
 
 /* SECTION PRESENTATION TRACE */
 
@@ -24,6 +23,8 @@
     display: flex;
     flex-direction: column;
     gap: 30px;
+    background-color: var(--noir-color);
+    padding: 50px;
 }
 
 .content_info {
@@ -32,61 +33,41 @@
     gap: 20px;
 }
 
-#img_presentation img {
-    width: 100%;
-}
-
 #presentation_trace .conteneur_paragraphe {
     display: flex;
-    /* grid-template-columns: 1fr 1fr; /* Ou repeat(3, 1fr) */
-    /* grid-template-rows: 1fr; */
-
     align-items: center;
     justify-content: center;
-
     gap: 30px;
-
 }
 
 #presentation_trace .conteneur_paragraphe:nth-child(odd) {
     flex-direction: row;
 }
+
 #presentation_trace .conteneur_paragraphe:nth-child(even) {
     flex-direction: row-reverse;
 }
 
-
-
 #presentation_trace .conteneur_paragraphe img {
-    /* flex: 1; */
     width: 100%;
     flex-basis: 50%;
-    display: flex;
 }
 
 #presentation_trace .conteneur_img {
-    /* width: 50%; */
     flex: 1;
 }
 
-
-
 #presentation_trace .conteneur_paragraphe p {
-    /* width: 50%; */
     flex-basis: 50%;
-    display: flex;
     flex: 2;
-
     font-size: 20px;
-    
 }
 
 p.amorse {
     flex: 1;
 }
 
-
-@media screen and (max-width : 768px) {
+@media screen and (max-width: 768px) {
     #presentation_trace .conteneur_paragraphe,
     #presentation_trace .conteneur_paragraphe:nth-child(even),
     #presentation_trace .conteneur_paragraphe:nth-child(odd) {
@@ -95,11 +76,11 @@ p.amorse {
     }
 
     #img_presentation {
-        width: 100%; /* Prend toute la largeur sur mobile */
+        width: 100%;
     }
 
     #presentation_trace .conteneur_paragraphe p.paragraphe,
     #presentation_trace .conteneur_img {
-        width: 100%; /* S'assure que le texte et l'image prennent toute la largeur */
+        width: 100%;
     }
 }
