@@ -1,12 +1,29 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); 
+apply_legacy_cors_headers();
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
+}
+
+function apply_legacy_cors_headers(): void {
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $configured = $_ENV['CORS_ALLOWED_ORIGINS'] ?? getenv('CORS_ALLOWED_ORIGINS') ?: '';
+    $allowed = $configured !== ''
+        ? array_map('trim', explode(',', $configured))
+        : [
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'https://loic-merlhe.wstr.fr',
+        ];
+
+    header('Vary: Origin');
+    if ($origin !== '' && in_array($origin, $allowed, true)) {
+        header("Access-Control-Allow-Origin: $origin");
+    }
 }
 
 $host = 'localhost';

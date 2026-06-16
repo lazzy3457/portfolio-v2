@@ -1,3 +1,4 @@
-const Url_api_getSQL = "https://loic-merlhe.wstr.fr/api/getSQL.php";
-
-export default Url_api_getSQL;
+export const API_BASE = import.meta.env.VITE_API_BASE_URL
+    ?? (import.meta.env.DEV
+        ? "http://localhost/portfolio_v/v3/public/api"
+        : "https://loic-merlhe.wstr.fr/api");

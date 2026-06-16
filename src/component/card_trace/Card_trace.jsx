@@ -1,7 +1,7 @@
 import "./card_trace.css"
 import { Link } from "react-router-dom"
 
-export default function Card_trace({ img, title, description, tags, id }) {
+export default function CardTrace({ img, title, tags, id }) {
     return (
         <article className="card_trace">
             <Link to={`/trace/${id}`}>
@@ -15,21 +15,15 @@ export default function Card_trace({ img, title, description, tags, id }) {
                 </div>
                 <div className="card-info">
                     <h3>{title}</h3>
-                    <Tags liste_tags={tags} />
+                    {Array.isArray(tags) && tags.length > 0 && (
+                        <div className="tags">
+                            {tags.map((tagName, index) => (
+                                <span key={`${tagName}-${index}`} className="tag">{tagName}</span>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </Link>
         </article>
-    )
-}
-
-function Tags({ liste_tags }) {
-    if (!Array.isArray(liste_tags) || liste_tags.length === 0) return null;
-
-    return (
-        <div className="tags">
-            {liste_tags.map((tagName, index) => (
-                <span key={index} className="tag">{tagName}</span>
-            ))}
-        </div>
     )
 }

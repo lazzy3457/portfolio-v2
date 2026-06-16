@@ -1,7 +1,7 @@
 <?php
 // 1. Headers pour le JSON et le CORS
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *'); 
+apply_legacy_cors_headers();
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
@@ -11,11 +11,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+function apply_legacy_cors_headers(): void {
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $configured = $_ENV['CORS_ALLOWED_ORIGINS'] ?? getenv('CORS_ALLOWED_ORIGINS') ?: '';
+    $allowed = $configured !== ''
+        ? array_map('trim', explode(',', $configured))
+        : [
+            'http://localhost:5173',
+            'http://127.0.0.1:5173',
+            'https://loic-merlhe.wstr.fr',
+        ];
+
+    header('Vary: Origin');
+    if ($origin !== '' && in_array($origin, $allowed, true)) {
+        header("Access-Control-Allow-Origin: $origin");
+    }
+}
+
 // 2. CONFIGURATION (C'est ici que l'erreur 500 se produisait)
-$host = 'localhost'; // ✅ CHANGÉ : localhost est obligatoire sur 99% des hébergeurs
-$dbname = 'kvbuwk_loicmerl_db';
-$user = 'kvbuwk_loicmerl_db';
-$pass = '*XIeo3J_50!7Tj%x';
+$host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?: 'localhost';
+$dbname = $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'portfolio';
+$user = $_ENV['DB_USER'] ?? getenv('DB_USER') ?: 'root';
+$pass = $_ENV['DB_PASS'] ?? getenv('DB_PASS') ?: '';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$dbname;charset=$charset";

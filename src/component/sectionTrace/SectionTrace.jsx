@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
-import Card_trace from "../card_trace/Card_trace";
+import { fetchTraces } from "../../api/traces.js";
+import CardTrace from "../card_trace/Card_trace";
 import SearchBar from "../searchBar/SearchBar";
-import Url_api_getSQL from "../../conf.jsx";
 import "./SectionTrace.css";
 
 const LANGUAGES = ["JavaScript", "React", "CSS", "PHP", "HTML", "Python", "Java", "SQL"];
-const TYPES = [
+const CONTEXTS = [
     { value: "pro", label: "Professionnel" },
-    { value: "academique", label: "Académique" },
+    { value: "univ", label: "Universitaire" },
 ];
 
 export default function SectionTrace({ nombre_trace = Infinity, type = "" }) {
-    const [traces, setTraces] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [tracesState, setTracesState] = useState({
+        items: [],
+        loading: true,
+        error: null,
+    });
     const [searchTerm, setSearchTerm] = useState("");
     const [activeFilters, setActiveFilters] = useState([]);
     const [filterInput, setFilterInput] = useState("");
@@ -21,28 +24,47 @@ export default function SectionTrace({ nombre_trace = Infinity, type = "" }) {
     const [projectType, setProjectType] = useState(type);
 
     useEffect(() => {
-        setProjectType(type);
-    }, [type]);
+        const controller = new AbortController();
 
-    useEffect(() => {
-        setLoading(true);
-        let url = `${Url_api_getSQL}?table=trace&search=${encodeURIComponent(searchTerm)}`;
-        if (language) url += `&language=${encodeURIComponent(language)}`;
-        if (projectType) url += `&type=${encodeURIComponent(projectType)}`;
-
-        fetch(url)
-            .then(res => res.json())
+        Promise.resolve()
+            .then(() => {
+                setTracesState(prev => ({ ...prev, loading: true, error: null }));
+                return fetchTraces(
+                    { search: searchTerm, context: projectType },
+                    { signal: controller.signal }
+                );
+            })
             .then(data => {
-                if (Array.isArray(data)) setTraces(data);
-                setLoading(false);
+                setTracesState({
+                    items: Array.isArray(data) ? data : [],
+                    loading: false,
+                    error: null,
+                });
             })
             .catch(err => {
+                if (err.name === "AbortError") return;
                 console.error("Erreur:", err);
-                setLoading(false);
+                setTracesState(prev => ({
+                    ...prev,
+                    loading: false,
+                    error: "Impossible de charger les projets.",
+                }));
             });
-    }, [searchTerm, language, projectType]);
 
-    const displayed = traces.slice(0, nombre_trace === Infinity ? traces.length : nombre_trace);
+        return () => controller.abort();
+    }, [searchTerm, projectType]);
+
+    const filteredTraces = tracesState.items.filter(trace => {
+        const searchableValues = getSearchableValues(trace);
+        const normalizedLanguage = normalizeText(language);
+        const matchesLanguage = !language || searchableValues.some(value => value.includes(normalizedLanguage));
+        const matchesActiveFilters = activeFilters.every(filter =>
+            searchableValues.some(value => value.includes(normalizeText(filter)))
+        );
+
+        return matchesLanguage && matchesActiveFilters;
+    });
+    const displayed = filteredTraces.slice(0, nombre_trace === Infinity ? filteredTraces.length : nombre_trace);
 
     const addFilter = (value) => {
         const trimmed = value.trim();
@@ -80,12 +102,12 @@ export default function SectionTrace({ nombre_trace = Infinity, type = "" }) {
                                     <div id="filter-input-popup">
                                         <input
                                             type="text"
-                                            placeholder="ex: JS, React…"
+                                            placeholder="ex: JS, React..."
                                             value={filterInput}
                                             onChange={e => setFilterInput(e.target.value)}
                                             onKeyDown={e => {
-                                                if (e.key === 'Enter') addFilter(filterInput);
-                                                if (e.key === 'Escape') setShowFilterInput(false);
+                                                if (e.key === "Enter") addFilter(filterInput);
+                                                if (e.key === "Escape") setShowFilterInput(false);
                                             }}
                                             autoFocus
                                         />
@@ -103,7 +125,7 @@ export default function SectionTrace({ nombre_trace = Infinity, type = "" }) {
                                                 className="filter-tag-remove"
                                                 onClick={() => removeFilter(f)}
                                                 aria-label={`Supprimer le filtre ${f}`}
-                                            >×</button>
+                                            >x</button>
                                         </span>
                                     ))}
                                 </div>
@@ -132,7 +154,7 @@ export default function SectionTrace({ nombre_trace = Infinity, type = "" }) {
                                     onChange={e => setProjectType(e.target.value)}
                                 >
                                     <option value="">Type</option>
-                                    {TYPES.map(t => (
+                                    {CONTEXTS.map(t => (
                                         <option key={t.value} value={t.value}>{t.label}</option>
                                     ))}
                                 </select>
@@ -144,17 +166,18 @@ export default function SectionTrace({ nombre_trace = Infinity, type = "" }) {
             )}
 
             <div id="conteneur_trace">
-                {loading ? (
-                    <p className="trace-status">Chargement…</p>
+                {tracesState.loading ? (
+                    <p className="trace-status">Chargement...</p>
+                ) : tracesState.error ? (
+                    <p className="trace-status trace-status-error">{tracesState.error}</p>
                 ) : displayed.length > 0 ? (
                     displayed.map(trace => (
-                        <Card_trace
+                        <CardTrace
                             key={trace.id}
                             id={trace.id}
                             title={trace.title}
-                            description={trace.description}
                             img={trace.img}
-                            tags={trace.tags}
+                            tags={getCardTags(trace)}
                         />
                     ))
                 ) : (
@@ -163,4 +186,34 @@ export default function SectionTrace({ nombre_trace = Infinity, type = "" }) {
             </div>
         </section>
     );
+}
+
+function normalizeText(value) {
+    return String(value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+}
+
+function getCardTags(trace) {
+    if (Array.isArray(trace.tags)) return trace.tags;
+
+    return [
+        ...(trace.languages ?? []).map(language => language.label),
+        ...(trace.project_types ?? []).map(type => type.label),
+        trace.context_label,
+    ].filter(Boolean);
+}
+
+function getSearchableValues(trace) {
+    return [
+        trace.title,
+        trace.description,
+        trace.context_slug,
+        trace.context_label,
+        ...(trace.tags ?? []),
+        ...(trace.languages ?? []).flatMap(language => [language.slug, language.label]),
+        ...(trace.skills ?? []).flatMap(skill => [skill.slug, skill.label, skill.category]),
+        ...(trace.project_types ?? []).flatMap(type => [type.slug, type.label]),
+    ].map(normalizeText);
 }

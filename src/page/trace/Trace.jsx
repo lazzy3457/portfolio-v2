@@ -1,118 +1,167 @@
 import './trace.css';
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import Url_api_getSQL from "../../conf.jsx";
+import { fetchTrace } from "../../api/traces.js";
 
 export default function Trace() {
   const { id } = useParams();
-  const [trace, setTrace] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [traceState, setTraceState] = useState({
+    trace: null,
+    loading: true,
+    error: null,
+  });
 
   useEffect(() => {
-    setLoading(true);
-    fetch(`${Url_api_getSQL}?table=trace&id_trace=${id}`)
-      .then(response => {
-        if (!response.ok) throw new Error("Erreur réseau");
-        return response.json();
+    const controller = new AbortController();
+
+    Promise.resolve()
+      .then(() => {
+        setTraceState(prev => ({ ...prev, loading: true, error: null }));
+        return fetchTrace(id, { signal: controller.signal });
       })
       .then(data => {
-        setTrace(Array.isArray(data) ? data : [data]);
-        setLoading(false);
+        setTraceState({
+          trace: Array.isArray(data) ? data[0] ?? null : data,
+          loading: false,
+          error: null,
+        });
       })
       .catch(err => {
-        setLoading(false);
-        setError(err.message);
+        if (err.name === "AbortError") return;
+        setTraceState({
+          trace: null,
+          loading: false,
+          error: err.message,
+        });
       });
+
+    return () => controller.abort();
   }, [id]);
 
-  if (loading) return <p className="status">Chargement...</p>;
-  if (error) return <p className="status error">Erreur : {error}</p>;
-  if (trace.length === 0) return <p className="status">Aucun projet trouvé.</p>;
+  if (traceState.loading) return <p className="status">Chargement...</p>;
+  if (traceState.error) return <p className="status error">Erreur : {traceState.error}</p>;
+  if (!traceState.trace) return <p className="status">Aucun projet trouvé.</p>;
+
+  const trace = traceState.trace;
+  const heroImages = getImages(trace.img_presentation);
+  const presentationImages = heroImages.length > 0 ? heroImages : getImages(trace.img);
+  const sections = getSections(trace);
+  const tags = getTraceTags(trace);
 
   return (
-    <>
-      {trace.map((item, mainIndex) => (
-        <section key={mainIndex} id="trace_page">
-          <section id="hero_trace">
-            <div id="img_presentation">
-              <div className="defilement-img">
-                {Array.isArray(item.img_presentation) && item.img_presentation.map((imgSrc, index) => (
-                  <img
-                    key={index}
-                    src={`/assets/trace/${id}/${imgSrc}`}
-                    alt={`Illustration ${index + 1}`}
-                  />
-                ))}
-              </div>
+    <section id="trace_page">
+      {presentationImages.length > 0 && (
+        <section id="hero_trace">
+          <div id="img_presentation">
+            <div className="defilement-img">
+              {presentationImages.map((imgSrc, index) => (
+                <img
+                  key={`${imgSrc}-${index}`}
+                  src={`/assets/trace/${id}/${imgSrc}`}
+                  alt={`Illustration ${index + 1}`}
+                />
+              ))}
             </div>
-          </section>
-
-          <section id="presentation_trace">
-            <h1>{item.title}</h1>
-            {Array.isArray(item.content) && item.content.map((content_info, index) => (
-              <ContentTrace
-                key={index}
-                index={index}
-                content_info={content_info}
-                id={id}
-              />
-            ))}
-          </section>
+          </div>
         </section>
-      ))}
-    </>
-  );
-}
+      )}
 
-function ContentTrace({ index, content_info, id }) {
-  if (index === 0) return <Amorse content_info={content_info} />;
-
-  const hasImages = content_info.content_paragraphe?.[0]?.images?.length > 0;
-  if (hasImages) return <ParagrapheImage content_info={content_info} id={id} />;
-  return <Paragraphe content_info={content_info} />;
-}
-
-function Amorse({ content_info }) {
-  const texte = content_info.content_paragraphe?.[0]?.paragraphe;
-  return (
-    <div className="conteneur_paragraphe">
-      <p className="amorse">{texte}</p>
-    </div>
-  );
-}
-
-function ParagrapheImage({ content_info, id }) {
-  return (
-    <div className="content_info">
-      <h2>{content_info.title}</h2>
-      {content_info.content_paragraphe?.map((section, idx) => (
-        <div key={idx} className="conteneur_paragraphe">
-          <p className="paragraphe">{section.paragraphe}</p>
-          <div className="conteneur_img">
-            {section.images?.map((imgSrc, imgIdx) => (
-              <img
-                key={imgIdx}
-                src={`/assets/trace/${id}/${imgSrc}`}
-                alt="Illustration paragraphe"
-              />
+      <section id="presentation_trace">
+        <h1>{trace.title}</h1>
+        {trace.description && <p className="description_trace">{trace.description}</p>}
+        {tags.length > 0 && (
+          <div className="trace-tags">
+            {tags.map((tag, index) => (
+              <span key={`${tag}-${index}`} className="trace-tag">{tag}</span>
             ))}
           </div>
-        </div>
+        )}
+
+        {sections.length > 0 ? (
+          sections.map((section, index) => (
+            <ContentTrace
+              key={index}
+              section={section}
+              id={id}
+              isIntro={index === 0}
+            />
+          ))
+        ) : (
+          <p className="paragraphe">Aucun contenu détaillé disponible.</p>
+        )}
+      </section>
+    </section>
+  );
+}
+
+function ContentTrace({ section, id, isIntro }) {
+  return (
+    <div className={`content_info${isIntro ? " content_info_intro" : ""}`}>
+      {section.title && <h2>{section.title}</h2>}
+      {section.paragraphs.map((paragraph, idx) => (
+        <TraceParagraph key={idx} paragraph={paragraph} id={id} />
       ))}
     </div>
   );
 }
 
-function Paragraphe({ content_info }) {
+function TraceParagraph({ paragraph, id }) {
+  const images = getImages(paragraph.images);
+
   return (
-    <div className="content_info">
-      <h2>{content_info.title}</h2>
-      {content_info.content_paragraphe?.map((section, idx) => (
-        <div key={idx} className="conteneur_paragraphe">
-          <p className="paragraphe">{section.paragraphe}</p>
+    <div className={`conteneur_paragraphe${images.length === 0 ? " sans-image" : ""}`}>
+      <p className="paragraphe">{paragraph.text}</p>
+      {images.length > 0 && (
+        <div className="conteneur_img">
+          {images.map((imgSrc, imgIdx) => (
+            <img
+              key={`${imgSrc}-${imgIdx}`}
+              src={`/assets/trace/${id}/${imgSrc}`}
+              alt="Illustration paragraphe"
+            />
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
+}
+
+function getSections(trace) {
+  if (Array.isArray(trace.sections)) {
+    return trace.sections.map(section => ({
+      title: section.title ?? "",
+      paragraphs: (section.paragraphs ?? []).map(paragraph => ({
+        text: paragraph.content ?? "",
+        images: getImages(paragraph.images),
+      })),
+    }));
+  }
+
+  if (Array.isArray(trace.content)) {
+    return trace.content.map(section => ({
+      title: section.title ?? "",
+      paragraphs: (section.content_paragraphe ?? []).map(paragraph => ({
+        text: paragraph.paragraphe ?? "",
+        images: getImages(paragraph.images),
+      })),
+    }));
+  }
+
+  return [];
+}
+
+function getTraceTags(trace) {
+  if (Array.isArray(trace.tags)) return trace.tags;
+
+  return [
+    ...(trace.languages ?? []).map(language => language.label),
+    ...(trace.skills ?? []).map(skill => skill.label),
+    ...(trace.project_types ?? []).map(type => type.label),
+    trace.context_label,
+  ].filter(Boolean);
+}
+
+function getImages(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return value ? [value] : [];
 }

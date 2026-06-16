@@ -217,6 +217,10 @@
     font-family: var(--audiowide-font);
 }
 
+.trace-status-error {
+    color: #ff8f8f;
+}
+
 @media screen and (max-width: 900px) {
     #filtres-section {
         flex-direction: column;
