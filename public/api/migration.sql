@@ -173,3 +173,23 @@ CREATE TABLE IF NOT EXISTS `trace_paragraph` (
     `images`     JSON DEFAULT NULL,
     FOREIGN KEY (`section_id`) REFERENCES `trace_section`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- Apprentissages Critiques (AC)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `ac` (
+    `id`    INT AUTO_INCREMENT PRIMARY KEY,
+    `slug`  VARCHAR(100) NOT NULL UNIQUE,
+    `title` VARCHAR(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `trace_ac` (
+    `trace_id`    INT  NOT NULL,
+    `ac_id`       INT  NOT NULL,
+    `position`    INT  NOT NULL DEFAULT 0,
+    `description` TEXT DEFAULT NULL,
+    PRIMARY KEY (`trace_id`, `ac_id`),
+    FOREIGN KEY (`trace_id`) REFERENCES `trace`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`ac_id`)    REFERENCES `ac`(`id`)    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

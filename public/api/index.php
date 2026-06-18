@@ -97,6 +97,41 @@ function route(string $uri): void {
         return;
     }
 
+    // /admin/languages  (POST, PUT, DELETE — protégé JWT)
+    if ($uri === '/admin/languages') {
+        require_once __DIR__ . '/controllers/AdminRefController.php';
+        handle_admin_languages();
+        return;
+    }
+
+    // /admin/skills  (POST, PUT, DELETE — protégé JWT)
+    if ($uri === '/admin/skills') {
+        require_once __DIR__ . '/controllers/AdminRefController.php';
+        handle_admin_skills();
+        return;
+    }
+
+    // /admin/project-types  (POST, PUT, DELETE — protégé JWT)
+    if ($uri === '/admin/project-types') {
+        require_once __DIR__ . '/controllers/AdminRefController.php';
+        handle_admin_project_types();
+        return;
+    }
+
+    // GET /acs  (liste publique des ACs)
+    if ($uri === '/acs' && $method === 'GET') {
+        require_once __DIR__ . '/controllers/AdminRefController.php';
+        handle_acs_list();
+        return;
+    }
+
+    // /admin/acs  (POST, PUT, DELETE — protégé JWT)
+    if ($uri === '/admin/acs') {
+        require_once __DIR__ . '/controllers/AdminRefController.php';
+        handle_admin_acs();
+        return;
+    }
+
     // POST /admin/traces/{id}/upload  (upload d'image — protégé JWT)
     if (preg_match('#^/admin/traces/(\d+)/upload$#', $uri, $m) && $method === 'POST') {
         require_once __DIR__ . '/controllers/AdminController.php';

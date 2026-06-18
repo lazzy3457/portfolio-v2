@@ -151,3 +151,70 @@
         grid-auto-rows: 180px;
     }
 }
+
+/* ============================================================
+   Accordéon AC — Apprentissages Critiques
+   ============================================================ */
+
+#ac_trace {
+    margin-top: 3rem;
+}
+
+#ac_trace h2 {
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+
+.ac-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ac-item {
+    border: 1px solid #333;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.ac-trigger {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1rem;
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+}
+
+.ac-trigger:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.ac-item--open .ac-trigger {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.ac-icon {
+    font-size: 1.25rem;
+    line-height: 1;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+}
+
+.ac-content {
+    padding: 0.75rem 1rem 1rem;
+    border-top: 1px solid #333;
+}
+
+.ac-content p {
+    margin: 0;
+    line-height: 1.7;
+    color: #bbb;
+}

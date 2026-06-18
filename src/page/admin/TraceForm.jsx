@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { fetchTrace } from "../../api/traces.js";
-import { fetchLanguages, fetchSkills, fetchProjectTypes, fetchContexts } from "../../api/filters.js";
-import { createTrace, updateTrace, uploadTraceImage } from "../../api/admin.js";
+import { fetchLanguages, fetchSkills, fetchProjectTypes, fetchContexts, fetchAcs } from "../../api/filters.js";
+import {
+    createTrace, updateTrace, uploadTraceImage,
+    createLanguage, updateLanguage, deleteLanguage,
+    createSkill, updateSkill, deleteSkill,
+    createProjectType, updateProjectType, deleteProjectType,
+    createAc, updateAc, deleteAc,
+} from "../../api/admin.js";
 import ImageDropZone from "./ImageDropZone.jsx";
 import "./admin.css";
 
@@ -17,8 +23,11 @@ const EMPTY_FORM = {
     language_ids: [],
     skill_ids: [],
     project_type_ids: [],
+    acs: [],
     sections: [],
 };
+
+const EMPTY_REF_FORM = { mode: null, editId: null, fields: {}, saving: false, error: null };
 
 export default function TraceForm() {
     const { id } = useParams();
@@ -26,12 +35,19 @@ export default function TraceForm() {
     const isEdit   = !!id && id !== "new";
 
     const [form,     setForm]     = useState(EMPTY_FORM);
-    const [refs,     setRefs]     = useState({ languages: [], skills: [], projectTypes: [], contexts: [] });
+    const [refs,     setRefs]     = useState({ languages: [], skills: [], projectTypes: [], contexts: [], acs: [] });
     const [loading,  setLoading]  = useState(isEdit);
     const [saving,   setSaving]   = useState(false);
     const [error,    setError]    = useState(null);
 
-    // Fichiers en attente (trace pas encore créée — pas d'id pour les stocker)
+    const [refForms, setRefForms] = useState({
+        languages:    { ...EMPTY_REF_FORM },
+        skills:       { ...EMPTY_REF_FORM },
+        projectTypes: { ...EMPTY_REF_FORM },
+        acs:          { ...EMPTY_REF_FORM },
+    });
+
+    // Fichiers en attente (trace pas encore créée)
     const [pendingImg,          setPendingImg]          = useState(null);
     const [pendingPresentation, setPendingPresentation] = useState([]);
 
@@ -42,8 +58,9 @@ export default function TraceForm() {
             fetchSkills(),
             fetchProjectTypes(),
             fetchContexts(),
-        ]).then(([languages, skills, projectTypes, contexts]) => {
-            setRefs({ languages, skills, projectTypes, contexts });
+            fetchAcs(),
+        ]).then(([languages, skills, projectTypes, contexts, acs]) => {
+            setRefs({ languages, skills, projectTypes, contexts, acs });
         });
     }, []);
 
@@ -63,6 +80,7 @@ export default function TraceForm() {
                     language_ids:     (trace.languages      ?? []).map(l => l.id),
                     skill_ids:        (trace.skills         ?? []).map(s => s.id),
                     project_type_ids: (trace.project_types  ?? []).map(p => p.id),
+                    acs:              (trace.acs            ?? []).map(a => ({ ac_id: a.id, description: a.description ?? "" })),
                     sections:         mapSections(trace.sections ?? []),
                 });
                 setLoading(false);
@@ -79,6 +97,119 @@ export default function TraceForm() {
                 ? prev[key].filter(x => x !== itemId)
                 : [...prev[key], itemId],
         }));
+    };
+
+    // ---- ACs ----
+    const toggleAc = (acId) => {
+        setForm(prev => {
+            const exists = prev.acs.find(a => a.ac_id === acId);
+            if (exists) return { ...prev, acs: prev.acs.filter(a => a.ac_id !== acId) };
+            return { ...prev, acs: [...prev.acs, { ac_id: acId, description: "" }] };
+        });
+    };
+
+    const updateAcDescription = (acId, value) => {
+        setForm(prev => ({
+            ...prev,
+            acs: prev.acs.map(a => a.ac_id === acId ? { ...a, description: value } : a),
+        }));
+    };
+
+    // ---- Gestion inline des références ----
+    const setRefForm = (section, patch) => {
+        setRefForms(prev => ({ ...prev, [section]: { ...prev[section], ...patch } }));
+    };
+
+    const openAdd = (section) => {
+        const defaults = {
+            languages:    { label: "", color: "#6366f1" },
+            skills:       { label: "", category: "technique" },
+            projectTypes: { label: "", icon: "" },
+            acs:          { title: "" },
+        };
+        setRefForm(section, { mode: "add", editId: null, fields: defaults[section], error: null });
+    };
+
+    const openEdit = (section, item) => {
+        const fields = {
+            languages:    { label: item.label, color: item.color ?? "#6366f1" },
+            skills:       { label: item.label, category: item.category ?? "technique" },
+            projectTypes: { label: item.label, icon: item.icon ?? "" },
+            acs:          { title: item.title },
+        }[section];
+        setRefForm(section, { mode: "edit", editId: item.id, fields, error: null });
+    };
+
+    const cancelRefForm = (section) => {
+        setRefForms(prev => ({ ...prev, [section]: { ...EMPTY_REF_FORM } }));
+    };
+
+    const handleRefDelete = async (section) => {
+        const rf = refForms[section];
+        const deleteFns = {
+            languages:    deleteLanguage,
+            skills:       deleteSkill,
+            projectTypes: deleteProjectType,
+            acs:          deleteAc,
+        };
+        const item = refs[section].find(i => i.id === rf.editId);
+        const label = section === "acs" ? item?.title : item?.label;
+        if (!window.confirm(`Supprimer « ${label} » ?`)) return;
+
+        setRefForm(section, { saving: true, error: null });
+        try {
+            await deleteFns[section](rf.editId);
+            setRefs(prev => ({ ...prev, [section]: prev[section].filter(i => i.id !== rf.editId) }));
+            // Désélectionner si l'item était sélectionné
+            if (section === "acs") {
+                setForm(prev => ({ ...prev, acs: prev.acs.filter(a => a.ac_id !== rf.editId) }));
+            } else {
+                const idKey = { languages: "language_ids", skills: "skill_ids", projectTypes: "project_type_ids" }[section];
+                if (idKey) setForm(prev => ({ ...prev, [idKey]: prev[idKey].filter(x => x !== rf.editId) }));
+            }
+            setRefForms(prev => ({ ...prev, [section]: { ...EMPTY_REF_FORM } }));
+        } catch (err) {
+            const msg = err.message.includes("409") || err.message.includes("utilisé")
+                ? "Impossible de supprimer : cet élément est utilisé par une ou plusieurs traces."
+                : err.message;
+            setRefForm(section, { saving: false, error: msg });
+        }
+    };
+
+    const handleRefSave = async (section) => {
+        const rf = refForms[section];
+        setRefForm(section, { saving: true, error: null });
+
+        const apiFns = {
+            languages:    { create: createLanguage,    update: updateLanguage    },
+            skills:       { create: createSkill,       update: updateSkill       },
+            projectTypes: { create: createProjectType, update: updateProjectType },
+            acs:          { create: createAc,          update: updateAc          },
+        };
+
+        try {
+            let result;
+            if (rf.mode === "add") {
+                result = await apiFns[section].create(rf.fields);
+                setRefs(prev => ({ ...prev, [section]: [...prev[section], result] }));
+                // Auto-sélection après création
+                if (section === "acs") {
+                    setForm(prev => ({ ...prev, acs: [...prev.acs, { ac_id: result.id, description: "" }] }));
+                } else {
+                    const idKey = { languages: "language_ids", skills: "skill_ids", projectTypes: "project_type_ids" }[section];
+                    if (idKey) setForm(prev => ({ ...prev, [idKey]: [...prev[idKey], result.id] }));
+                }
+            } else {
+                result = await apiFns[section].update(rf.editId, rf.fields);
+                setRefs(prev => ({
+                    ...prev,
+                    [section]: prev[section].map(item => item.id === rf.editId ? result : item),
+                }));
+            }
+            setRefForms(prev => ({ ...prev, [section]: { ...EMPTY_REF_FORM } }));
+        } catch (err) {
+            setRefForm(section, { saving: false, error: err.message });
+        }
     };
 
     // ---- Sections ----
@@ -370,17 +501,35 @@ export default function TraceForm() {
                     <legend>Langages / Technologies</legend>
                     <div className="admin-chip-group">
                         {refs.languages.map(l => (
-                            <button
-                                key={l.id}
-                                type="button"
-                                className={`admin-chip${form.language_ids.includes(l.id) ? " admin-chip--active" : ""}`}
-                                onClick={() => toggleMulti('language_ids', l.id)}
-                                style={l.color && form.language_ids.includes(l.id) ? { borderColor: l.color } : {}}
-                            >
-                                {l.label}
-                            </button>
+                            <span key={l.id} className="admin-chip-wrapper">
+                                <button
+                                    type="button"
+                                    className={`admin-chip${form.language_ids.includes(l.id) ? " admin-chip--active" : ""}`}
+                                    onClick={() => toggleMulti('language_ids', l.id)}
+                                    style={l.color && form.language_ids.includes(l.id) ? { borderColor: l.color } : {}}
+                                >
+                                    {l.label}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="admin-chip-edit"
+                                    onClick={e => { e.stopPropagation(); openEdit('languages', l); }}
+                                    title="Modifier"
+                                >✏</button>
+                            </span>
                         ))}
+                        <button type="button" className="admin-btn admin-btn--sm" onClick={() => openAdd('languages')}>+</button>
                     </div>
+                    {refForms.languages.mode && (
+                        <RefInlineForm
+                            section="languages"
+                            refForm={refForms.languages}
+                            onChange={(f, v) => setRefForm('languages', { fields: { ...refForms.languages.fields, [f]: v } })}
+                            onSave={() => handleRefSave('languages')}
+                            onCancel={() => cancelRefForm('languages')}
+                            onDelete={() => handleRefDelete('languages')}
+                        />
+                    )}
                 </fieldset>
 
                 {/* Types de projet */}
@@ -388,16 +537,34 @@ export default function TraceForm() {
                     <legend>Types de projet</legend>
                     <div className="admin-chip-group">
                         {refs.projectTypes.map(pt => (
-                            <button
-                                key={pt.id}
-                                type="button"
-                                className={`admin-chip${form.project_type_ids.includes(pt.id) ? " admin-chip--active" : ""}`}
-                                onClick={() => toggleMulti('project_type_ids', pt.id)}
-                            >
-                                {pt.icon && <>{pt.icon} </>}{pt.label}
-                            </button>
+                            <span key={pt.id} className="admin-chip-wrapper">
+                                <button
+                                    type="button"
+                                    className={`admin-chip${form.project_type_ids.includes(pt.id) ? " admin-chip--active" : ""}`}
+                                    onClick={() => toggleMulti('project_type_ids', pt.id)}
+                                >
+                                    {pt.icon && <>{pt.icon} </>}{pt.label}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="admin-chip-edit"
+                                    onClick={e => { e.stopPropagation(); openEdit('projectTypes', pt); }}
+                                    title="Modifier"
+                                >✏</button>
+                            </span>
                         ))}
+                        <button type="button" className="admin-btn admin-btn--sm" onClick={() => openAdd('projectTypes')}>+</button>
                     </div>
+                    {refForms.projectTypes.mode && (
+                        <RefInlineForm
+                            section="projectTypes"
+                            refForm={refForms.projectTypes}
+                            onChange={(f, v) => setRefForm('projectTypes', { fields: { ...refForms.projectTypes.fields, [f]: v } })}
+                            onSave={() => handleRefSave('projectTypes')}
+                            onCancel={() => cancelRefForm('projectTypes')}
+                            onDelete={() => handleRefDelete('projectTypes')}
+                        />
+                    )}
                 </fieldset>
 
                 {/* Compétences */}
@@ -405,19 +572,96 @@ export default function TraceForm() {
                     <legend>Compétences</legend>
                     <div className="admin-chip-group">
                         {refs.skills.map(s => (
-                            <button
-                                key={s.id}
-                                type="button"
-                                className={`admin-chip${form.skill_ids.includes(s.id) ? " admin-chip--active" : ""}`}
-                                onClick={() => toggleMulti('skill_ids', s.id)}
-                            >
-                                {s.label}
-                            </button>
+                            <span key={s.id} className="admin-chip-wrapper">
+                                <button
+                                    type="button"
+                                    className={`admin-chip${form.skill_ids.includes(s.id) ? " admin-chip--active" : ""}`}
+                                    onClick={() => toggleMulti('skill_ids', s.id)}
+                                >
+                                    {s.label}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="admin-chip-edit"
+                                    onClick={e => { e.stopPropagation(); openEdit('skills', s); }}
+                                    title="Modifier"
+                                >✏</button>
+                            </span>
                         ))}
                         {refs.skills.length === 0 && (
                             <p className="admin-muted">Aucune compétence définie en base.</p>
                         )}
+                        <button type="button" className="admin-btn admin-btn--sm" onClick={() => openAdd('skills')}>+</button>
                     </div>
+                    {refForms.skills.mode && (
+                        <RefInlineForm
+                            section="skills"
+                            refForm={refForms.skills}
+                            onChange={(f, v) => setRefForm('skills', { fields: { ...refForms.skills.fields, [f]: v } })}
+                            onSave={() => handleRefSave('skills')}
+                            onCancel={() => cancelRefForm('skills')}
+                            onDelete={() => handleRefDelete('skills')}
+                        />
+                    )}
+                </fieldset>
+
+                {/* AC — Apprentissages Critiques */}
+                <fieldset className="admin-fieldset">
+                    <legend>AC — Apprentissages Critiques</legend>
+                    <div className="admin-chip-group">
+                        {refs.acs.map(ac => {
+                            const selected = form.acs.find(a => a.ac_id === ac.id);
+                            return (
+                                <span key={ac.id} className="admin-chip-wrapper">
+                                    <button
+                                        type="button"
+                                        className={`admin-chip${selected ? " admin-chip--active" : ""}`}
+                                        onClick={() => toggleAc(ac.id)}
+                                    >
+                                        {ac.title}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="admin-chip-edit"
+                                        onClick={e => { e.stopPropagation(); openEdit('acs', ac); }}
+                                        title="Modifier"
+                                    >✏</button>
+                                </span>
+                            );
+                        })}
+                        {refs.acs.length === 0 && (
+                            <p className="admin-muted">Aucun AC défini.</p>
+                        )}
+                        <button type="button" className="admin-btn admin-btn--sm" onClick={() => openAdd('acs')}>+</button>
+                    </div>
+                    {refForms.acs.mode && (
+                        <RefInlineForm
+                            section="acs"
+                            refForm={refForms.acs}
+                            onChange={(f, v) => setRefForm('acs', { fields: { ...refForms.acs.fields, [f]: v } })}
+                            onSave={() => handleRefSave('acs')}
+                            onCancel={() => cancelRefForm('acs')}
+                            onDelete={() => handleRefDelete('acs')}
+                        />
+                    )}
+                    {form.acs.length > 0 && (
+                        <div className="admin-ac-descriptions">
+                            {form.acs.map(entry => {
+                                const ac = refs.acs.find(a => a.id === entry.ac_id);
+                                return (
+                                    <div key={entry.ac_id} className="admin-ac-block">
+                                        <label>{ac?.title ?? `AC #${entry.ac_id}`}</label>
+                                        <textarea
+                                            rows={3}
+                                            placeholder="Description de cet AC pour cette trace…"
+                                            value={entry.description}
+                                            onChange={e => updateAcDescription(entry.ac_id, e.target.value)}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </fieldset>
 
                 {/* Sections de contenu */}
@@ -481,6 +725,89 @@ export default function TraceForm() {
                     </button>
                 </div>
             </form>
+        </div>
+    );
+}
+
+function RefInlineForm({ section, refForm, onChange, onSave, onCancel, onDelete }) {
+    const { fields, saving, error, mode } = refForm;
+    return (
+        <div className="admin-ref-inline-form">
+            {error && <p className="admin-error">{error}</p>}
+            <div className="admin-row">
+                {section === 'acs' ? (
+                    <label>
+                        Titre *
+                        <input
+                            value={fields.title ?? ""}
+                            onChange={e => onChange('title', e.target.value)}
+                            placeholder="Ex : AC1 — Réaliser un développement"
+                            autoFocus
+                        />
+                    </label>
+                ) : (
+                    <label>
+                        Libellé *
+                        <input
+                            value={fields.label ?? ""}
+                            onChange={e => onChange('label', e.target.value)}
+                            autoFocus
+                        />
+                    </label>
+                )}
+
+                {section === 'languages' && (
+                    <label>
+                        Couleur
+                        <div className="admin-ref-color-row">
+                            <input
+                                type="color"
+                                value={fields.color ?? "#6366f1"}
+                                onChange={e => onChange('color', e.target.value)}
+                                style={{ width: 40, height: 32, padding: 2, cursor: 'pointer' }}
+                            />
+                            <span style={{ fontSize: '0.85rem', color: '#888' }}>{fields.color}</span>
+                        </div>
+                    </label>
+                )}
+
+                {section === 'skills' && (
+                    <label>
+                        Catégorie *
+                        <select value={fields.category ?? "technique"} onChange={e => onChange('category', e.target.value)}>
+                            <option value="technique">Technique</option>
+                            <option value="framework">Framework</option>
+                            <option value="transversale">Transversale</option>
+                            <option value="methodo">Méthodologie</option>
+                        </select>
+                    </label>
+                )}
+
+                {section === 'projectTypes' && (
+                    <label>
+                        Icône (emoji)
+                        <input
+                            value={fields.icon ?? ""}
+                            onChange={e => onChange('icon', e.target.value)}
+                            maxLength={4}
+                            placeholder="🌐"
+                        />
+                    </label>
+                )}
+            </div>
+            <div className="admin-ref-inline-actions">
+                {mode === "edit" && onDelete && (
+                    <button type="button" className="admin-btn admin-btn--sm admin-btn--danger" onClick={onDelete} disabled={saving}>
+                        Supprimer
+                    </button>
+                )}
+                <button type="button" className="admin-btn admin-btn--sm" onClick={onCancel} disabled={saving}>
+                    Annuler
+                </button>
+                <button type="button" className="admin-btn admin-btn--sm admin-btn--primary" onClick={onSave} disabled={saving}>
+                    {saving ? "…" : mode === "add" ? "Créer" : "Enregistrer"}
+                </button>
+            </div>
         </div>
     );
 }

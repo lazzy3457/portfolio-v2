@@ -10,3 +10,4 @@ export const fetchLanguages    = () => fetchJson(`${API_BASE}/languages`);
 export const fetchSkills       = () => fetchJson(`${API_BASE}/skills`);
 export const fetchProjectTypes = () => fetchJson(`${API_BASE}/project-types`);
 export const fetchContexts     = () => fetchJson(`${API_BASE}/contexts`);
+export const fetchAcs          = () => fetchJson(`${API_BASE}/acs`);

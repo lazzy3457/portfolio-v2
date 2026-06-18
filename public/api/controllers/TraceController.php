@@ -104,6 +104,7 @@ function get_trace(int $id): void {
     $trace['skills']           = fetch_trace_skills($pdo, $id);
     $trace['project_types']    = fetch_trace_project_types($pdo, $id);
     $trace['sections']         = fetch_trace_sections($pdo, $id);
+    $trace['acs']              = fetch_trace_acs($pdo, $id);
 
     echo json_encode($trace);
 }
@@ -173,6 +174,18 @@ function fetch_trace_sections(PDO $pdo, int $trace_id): array {
     }
 
     return $sections;
+}
+
+function fetch_trace_acs(PDO $pdo, int $trace_id): array {
+    $stmt = $pdo->prepare("
+        SELECT a.id, a.slug, a.title, ta.description, ta.position
+        FROM trace_ac ta
+        JOIN ac a ON a.id = ta.ac_id
+        WHERE ta.trace_id = :id
+        ORDER BY ta.position ASC
+    ");
+    $stmt->execute(['id' => $trace_id]);
+    return $stmt->fetchAll();
 }
 
 function decode_json(?string $value): mixed {

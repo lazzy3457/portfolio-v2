@@ -46,6 +46,7 @@ function create_trace(): void {
 
         sync_relations($pdo, $trace_id, $data);
         sync_sections($pdo, $trace_id, $data['sections'] ?? []);
+        sync_trace_acs($pdo, $trace_id, $data);
 
         $pdo->commit();
     } catch (Throwable $e) {
@@ -95,6 +96,7 @@ function update_trace(int $id): void {
 
         sync_relations($pdo, $id, $data);
         sync_sections($pdo, $id, $data['sections'] ?? []);
+        sync_trace_acs($pdo, $id, $data);
 
         $pdo->commit();
     } catch (Throwable $e) {
@@ -169,6 +171,18 @@ function sync_sections(PDO $pdo, int $trace_id, array $sections): void {
                 'images'  => encode_json_nullable($para['images'] ?? null),
             ]);
         }
+    }
+}
+
+function sync_trace_acs(PDO $pdo, int $trace_id, array $data): void {
+    $pdo->prepare('DELETE FROM trace_ac WHERE trace_id = :tid')->execute(['tid' => $trace_id]);
+    $acs = $data['acs'] ?? [];
+    if (!is_array($acs)) return;
+    $ins = $pdo->prepare('INSERT INTO trace_ac (trace_id, ac_id, position, description) VALUES (:tid, :acid, :pos, :desc)');
+    foreach ($acs as $i => $ac) {
+        $acid = intval($ac['ac_id'] ?? 0);
+        if ($acid === 0) continue;
+        $ins->execute(['tid' => $trace_id, 'acid' => $acid, 'pos' => $i, 'desc' => $ac['description'] ?? null]);
     }
 }
 

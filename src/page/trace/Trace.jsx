@@ -89,6 +89,8 @@ export default function Trace() {
         ) : (
           <p className="paragraphe">Aucun contenu détaillé disponible.</p>
         )}
+
+        <AcSection acs={trace.acs} />
       </section>
     </section>
   );
@@ -123,6 +125,36 @@ function TraceParagraph({ paragraph, id }) {
         </div>
       )}
     </div>
+  );
+}
+
+function AcSection({ acs }) {
+  const [openIndex, setOpenIndex] = useState(null);
+  if (!acs || acs.length === 0) return null;
+
+  return (
+    <section id="ac_trace">
+      <h2>Apprentissages Critiques</h2>
+      <div className="ac-accordion">
+        {acs.map((ac, i) => (
+          <div key={ac.id ?? i} className={`ac-item${openIndex === i ? " ac-item--open" : ""}`}>
+            <button
+              className="ac-trigger"
+              onClick={() => setOpenIndex(openIndex === i ? null : i)}
+              aria-expanded={openIndex === i}
+            >
+              <span>{ac.title}</span>
+              <span className="ac-icon">{openIndex === i ? "−" : "+"}</span>
+            </button>
+            {openIndex === i && ac.description && (
+              <div className="ac-content">
+                <p>{ac.description}</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

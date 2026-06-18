@@ -18,7 +18,10 @@ async function fetchJson(url, options = {}) {
         window.location.href = '/admin/login';
         return;
     }
-    if (!res.ok) throw new Error(`Erreur réseau (${res.status})`);
+    if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Erreur réseau (${res.status})`);
+    }
     return res.json();
 }
 
@@ -61,6 +64,98 @@ export function updateTrace(id, data) {
 
 export function deleteTrace(id) {
     return fetchJson(`${API_BASE}/admin/traces?id=${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+    });
+}
+
+export function createLanguage(data) {
+    return fetchJson(`${API_BASE}/admin/languages`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+}
+
+export function updateLanguage(id, data) {
+    return fetchJson(`${API_BASE}/admin/languages?id=${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+}
+
+export function deleteLanguage(id) {
+    return fetchJson(`${API_BASE}/admin/languages?id=${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+    });
+}
+
+export function createSkill(data) {
+    return fetchJson(`${API_BASE}/admin/skills`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+}
+
+export function updateSkill(id, data) {
+    return fetchJson(`${API_BASE}/admin/skills?id=${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+}
+
+export function deleteSkill(id) {
+    return fetchJson(`${API_BASE}/admin/skills?id=${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+    });
+}
+
+export function createProjectType(data) {
+    return fetchJson(`${API_BASE}/admin/project-types`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+}
+
+export function updateProjectType(id, data) {
+    return fetchJson(`${API_BASE}/admin/project-types?id=${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+}
+
+export function deleteProjectType(id) {
+    return fetchJson(`${API_BASE}/admin/project-types?id=${id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+    });
+}
+
+export function createAc(data) {
+    return fetchJson(`${API_BASE}/admin/acs`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+}
+
+export function updateAc(id, data) {
+    return fetchJson(`${API_BASE}/admin/acs?id=${id}`, {
+        method: 'PUT',
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+}
+
+export function deleteAc(id) {
+    return fetchJson(`${API_BASE}/admin/acs?id=${id}`, {
         method: 'DELETE',
         headers: authHeaders(),
     });
