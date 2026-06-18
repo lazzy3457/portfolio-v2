@@ -127,7 +127,7 @@ function TraceParagraph({ paragraph, id }) {
 }
 
 function getSections(trace) {
-  if (Array.isArray(trace.sections)) {
+  if (Array.isArray(trace.sections) && trace.sections.length > 0) {
     return trace.sections.map(section => ({
       title: section.title ?? "",
       paragraphs: (section.paragraphs ?? []).map(paragraph => ({
