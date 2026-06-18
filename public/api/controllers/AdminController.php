@@ -200,6 +200,89 @@ function trace_exists(PDO $pdo, int $id): bool {
     return (bool) $stmt->fetchColumn();
 }
 
+// ----------------------------------------------------------------
+// POST /api/admin/traces/{id}/upload
+// ----------------------------------------------------------------
+function handle_admin_upload(int $trace_id): void {
+    require_jwt();
+
+    $pdo = get_pdo();
+    if (!trace_exists($pdo, $trace_id)) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Trace introuvable']);
+        return;
+    }
+
+    if (empty($_FILES['file']) || $_FILES['file']['error'] === UPLOAD_ERR_NO_FILE) {
+        http_response_code(422);
+        echo json_encode(['error' => 'Aucun fichier reçu']);
+        return;
+    }
+
+    $file = $_FILES['file'];
+
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(422);
+        echo json_encode(['error' => 'Échec du téléversement']);
+        return;
+    }
+
+    $max_size = 8 * 1024 * 1024; // 8 Mo
+    if ($file['size'] > $max_size) {
+        http_response_code(422);
+        echo json_encode(['error' => 'Fichier trop volumineux (8 Mo max)']);
+        return;
+    }
+
+    $allowed_ext = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!in_array($ext, $allowed_ext, true)) {
+        http_response_code(422);
+        echo json_encode(['error' => 'Type de fichier non autorisé']);
+        return;
+    }
+
+    $image_info = @getimagesize($file['tmp_name']);
+    if ($image_info === false) {
+        http_response_code(422);
+        echo json_encode(['error' => 'Le fichier n\'est pas une image valide']);
+        return;
+    }
+
+    $dir = __DIR__ . "/../../assets/trace/$trace_id";
+    if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Impossible de créer le dossier de stockage']);
+        return;
+    }
+
+    $filename = safe_upload_filename($dir, $file['name'], $ext);
+    $destination = "$dir/$filename";
+
+    if (!move_uploaded_file($file['tmp_name'], $destination)) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Échec de l\'enregistrement du fichier']);
+        return;
+    }
+
+    echo json_encode(['filename' => $filename]);
+}
+
+function safe_upload_filename(string $dir, string $original_name, string $ext): string {
+    $base = pathinfo($original_name, PATHINFO_FILENAME);
+    $base = preg_replace('/[^a-zA-Z0-9_-]+/', '-', $base);
+    $base = trim($base, '-');
+    if ($base === '') $base = 'image';
+
+    $filename = "$base.$ext";
+    $i = 1;
+    while (file_exists("$dir/$filename")) {
+        $filename = "$base-$i.$ext";
+        $i++;
+    }
+    return $filename;
+}
+
 function nullable_string(mixed $value): ?string {
     if ($value === null) return null;
     $value = trim((string) $value);

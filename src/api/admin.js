@@ -65,3 +65,13 @@ export function deleteTrace(id) {
         headers: authHeaders(),
     });
 }
+
+export function uploadTraceImage(traceId, file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return fetchJson(`${API_BASE}/admin/traces/${traceId}/upload`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${getToken()}` },
+        body: formData,
+    });
+}

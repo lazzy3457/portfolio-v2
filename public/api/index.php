@@ -97,6 +97,13 @@ function route(string $uri): void {
         return;
     }
 
+    // POST /admin/traces/{id}/upload  (upload d'image — protégé JWT)
+    if (preg_match('#^/admin/traces/(\d+)/upload$#', $uri, $m) && $method === 'POST') {
+        require_once __DIR__ . '/controllers/AdminController.php';
+        handle_admin_upload((int) $m[1]);
+        return;
+    }
+
     http_response_code(404);
     echo json_encode(['error' => 'Route introuvable', 'uri' => $uri]);
 }

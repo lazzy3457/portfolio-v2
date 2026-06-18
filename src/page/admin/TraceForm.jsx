@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { fetchTrace } from "../../api/traces.js";
 import { fetchLanguages, fetchSkills, fetchProjectTypes, fetchContexts } from "../../api/filters.js";
-import { createTrace, updateTrace } from "../../api/admin.js";
+import { createTrace, updateTrace, uploadTraceImage } from "../../api/admin.js";
+import ImageDropZone from "./ImageDropZone.jsx";
 import "./admin.css";
 
 const EMPTY_FORM = {
     title: "",
     description: "",
     img: "",
+    img_presentation: [],
     date_debut: "",
     date_fin: "",
     context_id: "",
@@ -28,6 +30,10 @@ export default function TraceForm() {
     const [loading,  setLoading]  = useState(isEdit);
     const [saving,   setSaving]   = useState(false);
     const [error,    setError]    = useState(null);
+
+    // Fichiers en attente (trace pas encore créée — pas d'id pour les stocker)
+    const [pendingImg,          setPendingImg]          = useState(null);
+    const [pendingPresentation, setPendingPresentation] = useState([]);
 
     // Charger les listes de référence
     useEffect(() => {
@@ -50,6 +56,7 @@ export default function TraceForm() {
                     title:            trace.title            ?? "",
                     description:      trace.description      ?? "",
                     img:              trace.img              ?? "",
+                    img_presentation: Array.isArray(trace.img_presentation) ? trace.img_presentation : [],
                     date_debut:       trace.date_debut       ?? "",
                     date_fin:         trace.date_fin         ?? "",
                     context_id:       trace.context_id       ?? "",
@@ -86,7 +93,7 @@ export default function TraceForm() {
 
     const addParagraph = (si) => {
         const sections = form.sections.map((s, i) =>
-            i === si ? { ...s, paragraphs: [...s.paragraphs, { content: "", images: [] }] } : s
+            i === si ? { ...s, paragraphs: [...s.paragraphs, { content: "", images: [], pendingImages: [] }] } : s
         );
         set('sections', sections);
     };
@@ -110,16 +117,179 @@ export default function TraceForm() {
         set('sections', sections);
     };
 
+    // ---- Images : miniature ----
+    const handleThumbnailFiles = async (files) => {
+        const file = files[0];
+        if (isEdit) {
+            try {
+                const { filename } = await uploadTraceImage(id, file);
+                set('img', filename);
+            } catch (err) {
+                setError(err.message);
+            }
+        } else {
+            setPendingImg(file);
+        }
+    };
+
+    const removeThumbnail = () => {
+        if (isEdit) set('img', "");
+        else setPendingImg(null);
+    };
+
+    const thumbnailPreviews = () => {
+        if (pendingImg) {
+            return [{ key: "pending-img", url: URL.createObjectURL(pendingImg) }];
+        }
+        if (form.img) {
+            return [{ key: "current-img", url: `/assets/trace/${id}/${form.img}` }];
+        }
+        return [];
+    };
+
+    // ---- Images : présentation ----
+    const handlePresentationFiles = async (files) => {
+        if (isEdit) {
+            try {
+                const filenames = [];
+                for (const file of files) {
+                    const { filename } = await uploadTraceImage(id, file);
+                    filenames.push(filename);
+                }
+                set('img_presentation', [...form.img_presentation, ...filenames]);
+            } catch (err) {
+                setError(err.message);
+            }
+        } else {
+            setPendingPresentation(prev => [...prev, ...files]);
+        }
+    };
+
+    const removePresentationImage = (key) => {
+        if (key.startsWith('existing:')) {
+            const filename = key.slice('existing:'.length);
+            set('img_presentation', form.img_presentation.filter(f => f !== filename));
+        } else if (key.startsWith('pending:')) {
+            const index = Number(key.slice('pending:'.length));
+            setPendingPresentation(prev => prev.filter((_, i) => i !== index));
+        }
+    };
+
+    const presentationPreviews = () => [
+        ...form.img_presentation.map(filename => ({
+            key: `existing:${filename}`,
+            url: `/assets/trace/${id}/${filename}`,
+        })),
+        ...pendingPresentation.map((file, i) => ({
+            key: `pending:${i}`,
+            url: URL.createObjectURL(file),
+        })),
+    ];
+
+    // ---- Images : paragraphes ----
+    const handleParagraphFiles = async (si, pi, files) => {
+        if (isEdit) {
+            try {
+                const filenames = [];
+                for (const file of files) {
+                    const { filename } = await uploadTraceImage(id, file);
+                    filenames.push(filename);
+                }
+                const para = form.sections[si].paragraphs[pi];
+                updateParagraph(si, pi, 'images', [...(para.images ?? []), ...filenames]);
+            } catch (err) {
+                setError(err.message);
+            }
+        } else {
+            const para = form.sections[si].paragraphs[pi];
+            updateParagraph(si, pi, 'pendingImages', [...(para.pendingImages ?? []), ...files]);
+        }
+    };
+
+    const removeParagraphImage = (si, pi, key) => {
+        const para = form.sections[si].paragraphs[pi];
+        if (key.startsWith('existing:')) {
+            const filename = key.slice('existing:'.length);
+            updateParagraph(si, pi, 'images', (para.images ?? []).filter(f => f !== filename));
+        } else if (key.startsWith('pending:')) {
+            const index = Number(key.slice('pending:'.length));
+            updateParagraph(si, pi, 'pendingImages', (para.pendingImages ?? []).filter((_, i) => i !== index));
+        }
+    };
+
+    const paragraphPreviews = (para) => [
+        ...(para.images ?? []).map(filename => ({
+            key: `existing:${filename}`,
+            url: `/assets/trace/${id}/${filename}`,
+        })),
+        ...(para.pendingImages ?? []).map((file, i) => ({
+            key: `pending:${i}`,
+            url: URL.createObjectURL(file),
+        })),
+    ];
+
+    // ---- Soumission ----
+    const buildPayload = (sourceForm) => ({
+        ...sourceForm,
+        sections: sourceForm.sections.map(s => ({
+            title: s.title,
+            paragraphs: s.paragraphs.map(p => ({ content: p.content, images: p.images ?? [] })),
+        })),
+    });
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
         setError(null);
         try {
             if (isEdit) {
-                await updateTrace(id, form);
-            } else {
-                await createTrace(form);
+                await updateTrace(id, buildPayload(form));
+                navigate("/admin");
+                return;
             }
+
+            const created = await createTrace(buildPayload(form));
+            const newId = created.id;
+
+            const hasPending = pendingImg
+                || pendingPresentation.length > 0
+                || form.sections.some(s => (s.paragraphs ?? []).some(p => (p.pendingImages ?? []).length > 0));
+
+            if (hasPending) {
+                let resolvedImg = form.img;
+                if (pendingImg) {
+                    const { filename } = await uploadTraceImage(newId, pendingImg);
+                    resolvedImg = filename;
+                }
+
+                const resolvedPresentation = [...form.img_presentation];
+                for (const file of pendingPresentation) {
+                    const { filename } = await uploadTraceImage(newId, file);
+                    resolvedPresentation.push(filename);
+                }
+
+                const resolvedSections = [];
+                for (const section of form.sections) {
+                    const paragraphs = [];
+                    for (const para of section.paragraphs) {
+                        const images = [...(para.images ?? [])];
+                        for (const file of para.pendingImages ?? []) {
+                            const { filename } = await uploadTraceImage(newId, file);
+                            images.push(filename);
+                        }
+                        paragraphs.push({ content: para.content, images });
+                    }
+                    resolvedSections.push({ title: section.title, paragraphs });
+                }
+
+                await updateTrace(newId, buildPayload({
+                    ...form,
+                    img: resolvedImg,
+                    img_presentation: resolvedPresentation,
+                    sections: resolvedSections,
+                }));
+            }
+
             navigate("/admin");
         } catch (err) {
             setError(err.message);
@@ -151,11 +321,27 @@ export default function TraceForm() {
                         <textarea rows={4} value={form.description} onChange={e => set('description', e.target.value)} />
                     </label>
 
+                    <label>
+                        Image principale (miniature)
+                        <ImageDropZone
+                            multiple={false}
+                            images={thumbnailPreviews()}
+                            onFiles={handleThumbnailFiles}
+                            onRemove={removeThumbnail}
+                        />
+                    </label>
+
+                    <label>
+                        Images de présentation
+                        <ImageDropZone
+                            multiple={true}
+                            images={presentationPreviews()}
+                            onFiles={handlePresentationFiles}
+                            onRemove={removePresentationImage}
+                        />
+                    </label>
+
                     <div className="admin-row">
-                        <label>
-                            Image principale (nom de fichier)
-                            <input value={form.img} onChange={e => set('img', e.target.value)} placeholder="cover.png" />
-                        </label>
                         <label>
                             Contexte
                             <select value={form.context_id} onChange={e => set('context_id', e.target.value)}>
@@ -261,12 +447,11 @@ export default function TraceForm() {
                                         value={para.content}
                                         onChange={e => updateParagraph(si, pi, 'content', e.target.value)}
                                     />
-                                    <input
-                                        placeholder="Images (séparées par virgule)"
-                                        value={(para.images ?? []).join(', ')}
-                                        onChange={e => updateParagraph(si, pi, 'images',
-                                            e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                                        )}
+                                    <ImageDropZone
+                                        multiple={true}
+                                        images={paragraphPreviews(para)}
+                                        onFiles={files => handleParagraphFiles(si, pi, files)}
+                                        onRemove={key => removeParagraphImage(si, pi, key)}
                                     />
                                     <button type="button" className="admin-btn admin-btn--sm admin-btn--danger"
                                         onClick={() => removeParagraph(si, pi)}>
@@ -306,6 +491,7 @@ function mapSections(sections) {
         paragraphs: (s.paragraphs ?? []).map(p => ({
             content: p.content ?? "",
             images:  Array.isArray(p.images) ? p.images : [],
+            pendingImages: [],
         })),
     }));
 }
