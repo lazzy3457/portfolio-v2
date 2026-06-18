@@ -38,8 +38,10 @@ function create_trace(): void {
         $pdo->beginTransaction();
 
         $stmt = $pdo->prepare("
-            INSERT INTO trace (title, description, img, img_presentation, date_debut, date_fin, context_id)
-            VALUES (:title, :description, :img, :img_presentation, :date_debut, :date_fin, :context_id)
+            INSERT INTO trace (title, description, img, img_presentation, date_debut, date_fin,
+                               context_id, display_mode, carousel_interval)
+            VALUES (:title, :description, :img, :img_presentation, :date_debut, :date_fin,
+                    :context_id, :display_mode, :carousel_interval)
         ");
         $stmt->execute(trace_payload($data));
         $trace_id = (int) $pdo->lastInsertId();
@@ -89,7 +91,8 @@ function update_trace(int $id): void {
             SET title = :title, description = :description, img = :img,
                 img_presentation = :img_presentation,
                 date_debut = :date_debut, date_fin = :date_fin,
-                context_id = :context_id
+                context_id = :context_id,
+                display_mode = :display_mode, carousel_interval = :carousel_interval
             WHERE id = :id
         ");
         $stmt->execute($payload);
@@ -157,18 +160,24 @@ function sync_sections(PDO $pdo, int $trace_id, array $sections): void {
     $pdo->prepare('DELETE FROM trace_section WHERE trace_id = :tid')->execute(['tid' => $trace_id]);
 
     $ins_s = $pdo->prepare('INSERT INTO trace_section (trace_id, position, title) VALUES (:tid, :pos, :title)');
-    $ins_p = $pdo->prepare('INSERT INTO trace_paragraph (section_id, position, content, images) VALUES (:sid, :pos, :content, :images)');
+    $ins_p = $pdo->prepare('
+        INSERT INTO trace_paragraph (section_id, position, content, images, display_mode, carousel_interval)
+        VALUES (:sid, :pos, :content, :images, :display_mode, :carousel_interval)
+    ');
 
     foreach ($sections as $si => $section) {
         $ins_s->execute(['tid' => $trace_id, 'pos' => $si, 'title' => $section['title'] ?? null]);
         $section_id = (int) $pdo->lastInsertId();
 
         foreach ($section['paragraphs'] ?? [] as $pi => $para) {
+            $raw_mode = $para['display_mode'] ?? 'conteneur';
             $ins_p->execute([
-                'sid'     => $section_id,
-                'pos'     => $pi,
-                'content' => $para['content'] ?? null,
-                'images'  => encode_json_nullable($para['images'] ?? null),
+                'sid'              => $section_id,
+                'pos'              => $pi,
+                'content'          => $para['content'] ?? null,
+                'images'           => encode_json_nullable($para['images'] ?? null),
+                'display_mode'     => in_array($raw_mode, ['conteneur', 'carousel']) ? $raw_mode : 'conteneur',
+                'carousel_interval' => max(500, min(30000, intval($para['carousel_interval'] ?? 4000))),
             ]);
         }
     }
@@ -197,14 +206,17 @@ function read_json_payload(): ?array {
 }
 
 function trace_payload(array $data): array {
+    $raw_mode = $data['display_mode'] ?? 'conteneur';
     return [
-        'title'            => trim((string) $data['title']),
-        'description'      => nullable_string($data['description'] ?? null),
-        'img'              => nullable_string($data['img'] ?? null),
-        'img_presentation' => encode_json_nullable($data['img_presentation'] ?? null),
-        'date_debut'       => nullable_string($data['date_debut'] ?? null),
-        'date_fin'         => nullable_string($data['date_fin'] ?? null),
-        'context_id'       => nullable_int($data['context_id'] ?? null),
+        'title'             => trim((string) $data['title']),
+        'description'       => nullable_string($data['description'] ?? null),
+        'img'               => nullable_string($data['img'] ?? null),
+        'img_presentation'  => encode_json_nullable($data['img_presentation'] ?? null),
+        'date_debut'        => nullable_string($data['date_debut'] ?? null),
+        'date_fin'          => nullable_string($data['date_fin'] ?? null),
+        'context_id'        => nullable_int($data['context_id'] ?? null),
+        'display_mode'      => in_array($raw_mode, ['conteneur', 'carousel']) ? $raw_mode : 'conteneur',
+        'carousel_interval' => max(500, min(30000, intval($data['carousel_interval'] ?? 4000))),
     ];
 }
 

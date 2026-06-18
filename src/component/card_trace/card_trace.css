@@ -58,10 +58,23 @@
 }
 
 /* ── Tags ── */
+.tags-shell {
+    position: relative;
+}
+
 .tags {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+.tags--measure {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 .tag {

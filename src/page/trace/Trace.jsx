@@ -1,6 +1,6 @@
 import './trace.css';
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchTrace } from "../../api/traces.js";
 
 export default function Trace() {
@@ -47,23 +47,18 @@ export default function Trace() {
   const presentationImages = heroImages.length > 0 ? heroImages : getImages(trace.img);
   const sections = getSections(trace);
   const tags = getTraceTags(trace);
+  const heroDisplayMode = trace.display_mode ?? 'conteneur';
+  const heroCarouselInterval = trace.carousel_interval ?? 4000;
 
   return (
     <section id="trace_page">
       {presentationImages.length > 0 && (
-        <section id="hero_trace">
-          <div id="img_presentation">
-            <div className="defilement-img">
-              {presentationImages.map((imgSrc, index) => (
-                <img
-                  key={`${imgSrc}-${index}`}
-                  src={`/assets/trace/${id}/${imgSrc}`}
-                  alt={`Illustration ${index + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
+        <HeroImageGallery
+          images={presentationImages}
+          id={id}
+          displayMode={heroDisplayMode}
+          carouselInterval={heroCarouselInterval}
+        />
       )}
 
       <section id="presentation_trace">
@@ -96,12 +91,85 @@ export default function Trace() {
   );
 }
 
+function HeroImageGallery({ images, id, displayMode, carouselInterval }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (displayMode !== 'carousel' || images.length <= 1) return;
+    const t = setInterval(
+      () => setCurrentIndex(prev => (prev + 1) % images.length),
+      carouselInterval
+    );
+    return () => clearInterval(t);
+  }, [displayMode, carouselInterval, images.length]);
+
+  useEffect(() => {
+    const target = scrollRef.current?.children[currentIndex];
+    const container = scrollRef.current;
+    if (target && container) {
+      container.scrollTo({ left: target.offsetLeft, behavior: 'smooth' });
+    }
+  }, [currentIndex]);
+
+  const handlePrev = () => setCurrentIndex(prev => (prev - 1 + images.length) % images.length);
+  const handleNext = () => setCurrentIndex(prev => (prev + 1) % images.length);
+
+  return (
+    <section id="hero_trace">
+      <div id="img_presentation">
+        <div className="img-carousel-wrap">
+          {displayMode === 'carousel' && images.length > 1 && (
+            <button className="img-arrow img-arrow--prev" onClick={handlePrev} aria-label="Image précédente">
+              ‹
+            </button>
+          )}
+          <div
+            className={`defilement-img${displayMode !== 'carousel' ? ' defilement-img--grid' : ''}`}
+            ref={scrollRef}
+          >
+            {images.map((imgSrc, index) => (
+              <img
+                key={`${imgSrc}-${index}`}
+                src={`/assets/trace/${id}/${imgSrc}`}
+                alt={`Illustration ${index + 1}`}
+              />
+            ))}
+          </div>
+          {displayMode === 'carousel' && images.length > 1 && (
+            <button className="img-arrow img-arrow--next" onClick={handleNext} aria-label="Image suivante">
+              ›
+            </button>
+          )}
+        </div>
+        {displayMode === 'carousel' && images.length > 1 && (
+          <div className="img-carousel-indicator">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                className={`carousel-dot${i === currentIndex ? ' carousel-dot--active' : ''}`}
+                onClick={() => setCurrentIndex(i)}
+                aria-label={`Image ${i + 1}`}
+              />
+            ))}
+            <span className="carousel-counter">{currentIndex + 1} / {images.length}</span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function ContentTrace({ section, id, isIntro }) {
   return (
     <div className={`content_info${isIntro ? " content_info_intro" : ""}`}>
       {section.title && <h2>{section.title}</h2>}
       {section.paragraphs.map((paragraph, idx) => (
-        <TraceParagraph key={idx} paragraph={paragraph} id={id} />
+        <TraceParagraph
+          key={idx}
+          paragraph={paragraph}
+          id={id}
+        />
       ))}
     </div>
   );
@@ -109,19 +177,60 @@ function ContentTrace({ section, id, isIntro }) {
 
 function TraceParagraph({ paragraph, id }) {
   const images = getImages(paragraph.images);
+  const displayMode = paragraph.display_mode ?? 'conteneur';
+  const carouselInterval = paragraph.carousel_interval ?? 4000;
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (displayMode !== 'carousel' || images.length <= 1) return;
+    const t = setInterval(
+      () => setCurrentIndex(prev => (prev + 1) % images.length),
+      carouselInterval
+    );
+    return () => clearInterval(t);
+  }, [displayMode, carouselInterval, images.length]);
+
+  useEffect(() => {
+    const target = scrollRef.current?.children[currentIndex];
+    const container = scrollRef.current;
+    if (target && container) {
+      container.scrollTo({ left: target.offsetLeft, behavior: 'smooth' });
+    }
+  }, [currentIndex]);
+
+  const handlePrev = () => setCurrentIndex(prev => (prev - 1 + images.length) % images.length);
+  const handleNext = () => setCurrentIndex(prev => (prev + 1) % images.length);
 
   return (
     <div className={`conteneur_paragraphe${images.length === 0 ? " sans-image" : ""}`}>
       <p className="paragraphe">{paragraph.text}</p>
       {images.length > 0 && (
-        <div className="conteneur_img">
-          {images.map((imgSrc, imgIdx) => (
-            <img
-              key={`${imgSrc}-${imgIdx}`}
-              src={`/assets/trace/${id}/${imgSrc}`}
-              alt="Illustration paragraphe"
-            />
-          ))}
+        <div className="conteneur_img_wrap">
+          <div className="img-carousel-wrap">
+            {displayMode === 'carousel' && images.length > 1 && (
+              <button className="img-arrow img-arrow--prev" onClick={handlePrev} aria-label="Image précédente">
+                ‹
+              </button>
+            )}
+            <div
+              className={`conteneur_img${displayMode === 'carousel' ? ' conteneur_img--carousel' : ''}`}
+              ref={scrollRef}
+            >
+              {images.map((imgSrc, imgIdx) => (
+                <img
+                  key={`${imgSrc}-${imgIdx}`}
+                  src={`/assets/trace/${id}/${imgSrc}`}
+                  alt="Illustration paragraphe"
+                />
+              ))}
+            </div>
+            {displayMode === 'carousel' && images.length > 1 && (
+              <button className="img-arrow img-arrow--next" onClick={handleNext} aria-label="Image suivante">
+                ›
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -165,6 +274,8 @@ function getSections(trace) {
       paragraphs: (section.paragraphs ?? []).map(paragraph => ({
         text: paragraph.content ?? "",
         images: getImages(paragraph.images),
+        display_mode: paragraph.display_mode ?? "conteneur",
+        carousel_interval: paragraph.carousel_interval ?? 4000,
       })),
     }));
   }

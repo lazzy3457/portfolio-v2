@@ -160,7 +160,7 @@ function fetch_trace_sections(PDO $pdo, int $trace_id): array {
 
     foreach ($sections as &$section) {
         $pstmt = $pdo->prepare("
-            SELECT id, position, content, images
+            SELECT id, position, content, images, display_mode, carousel_interval
             FROM trace_paragraph
             WHERE section_id = :sid
             ORDER BY position

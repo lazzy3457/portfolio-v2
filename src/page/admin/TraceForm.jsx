@@ -25,6 +25,8 @@ const EMPTY_FORM = {
     project_type_ids: [],
     acs: [],
     sections: [],
+    display_mode: "conteneur",
+    carousel_interval: 4000,
 };
 
 const EMPTY_REF_FORM = { mode: null, editId: null, fields: {}, saving: false, error: null };
@@ -82,6 +84,8 @@ export default function TraceForm() {
                     project_type_ids: (trace.project_types  ?? []).map(p => p.id),
                     acs:              (trace.acs            ?? []).map(a => ({ ac_id: a.id, description: a.description ?? "" })),
                     sections:         mapSections(trace.sections ?? []),
+                    display_mode:     trace.display_mode      ?? "conteneur",
+                    carousel_interval: trace.carousel_interval ?? 4000,
                 });
                 setLoading(false);
             })
@@ -224,7 +228,7 @@ export default function TraceForm() {
 
     const addParagraph = (si) => {
         const sections = form.sections.map((s, i) =>
-            i === si ? { ...s, paragraphs: [...s.paragraphs, { content: "", images: [], pendingImages: [] }] } : s
+            i === si ? { ...s, paragraphs: [...s.paragraphs, { content: "", images: [], pendingImages: [], display_mode: "conteneur", carousel_interval: 4000 }] } : s
         );
         set('sections', sections);
     };
@@ -364,7 +368,12 @@ export default function TraceForm() {
         ...sourceForm,
         sections: sourceForm.sections.map(s => ({
             title: s.title,
-            paragraphs: s.paragraphs.map(p => ({ content: p.content, images: p.images ?? [] })),
+            paragraphs: s.paragraphs.map(p => ({
+                content: p.content,
+                images: p.images ?? [],
+                display_mode: p.display_mode ?? "conteneur",
+                carousel_interval: p.carousel_interval ?? 4000,
+            })),
         })),
     });
 
@@ -408,7 +417,12 @@ export default function TraceForm() {
                             const { filename } = await uploadTraceImage(newId, file);
                             images.push(filename);
                         }
-                        paragraphs.push({ content: para.content, images });
+                        paragraphs.push({
+                            content: para.content,
+                            images,
+                            display_mode: para.display_mode ?? "conteneur",
+                            carousel_interval: para.carousel_interval ?? 4000,
+                        });
                     }
                     resolvedSections.push({ title: section.title, paragraphs });
                 }
@@ -494,6 +508,33 @@ export default function TraceForm() {
                             <input type="date" value={form.date_fin} onChange={e => set('date_fin', e.target.value)} />
                         </label>
                     </div>
+                </fieldset>
+
+                {/* Affichage des images */}
+                <fieldset className="admin-fieldset">
+                    <legend>Affichage des images</legend>
+
+                    <label>
+                        Mode d'affichage
+                        <select value={form.display_mode} onChange={e => set('display_mode', e.target.value)}>
+                            <option value="conteneur">Conteneur (grille)</option>
+                            <option value="carousel">Carrousel</option>
+                        </select>
+                    </label>
+
+                    {form.display_mode === 'carousel' && (
+                        <label>
+                            Intervalle de défilement (secondes)
+                            <input
+                                type="number"
+                                min="0.5"
+                                max="30"
+                                step="0.5"
+                                value={form.carousel_interval / 1000}
+                                onChange={e => set('carousel_interval', Math.round(parseFloat(e.target.value) * 1000))}
+                            />
+                        </label>
+                    )}
                 </fieldset>
 
                 {/* Langages */}
@@ -697,6 +738,31 @@ export default function TraceForm() {
                                         onFiles={files => handleParagraphFiles(si, pi, files)}
                                         onRemove={key => removeParagraphImage(si, pi, key)}
                                     />
+                                    <div className="admin-row admin-para-display">
+                                        <label>
+                                            Affichage images
+                                            <select
+                                                value={para.display_mode ?? 'conteneur'}
+                                                onChange={e => updateParagraph(si, pi, 'display_mode', e.target.value)}
+                                            >
+                                                <option value="conteneur">Conteneur</option>
+                                                <option value="carousel">Carrousel</option>
+                                            </select>
+                                        </label>
+                                        {(para.display_mode ?? 'conteneur') === 'carousel' && (
+                                            <label>
+                                                Intervalle (s)
+                                                <input
+                                                    type="number"
+                                                    min="0.5"
+                                                    max="30"
+                                                    step="0.5"
+                                                    value={(para.carousel_interval ?? 4000) / 1000}
+                                                    onChange={e => updateParagraph(si, pi, 'carousel_interval', Math.round(parseFloat(e.target.value) * 1000))}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
                                     <button type="button" className="admin-btn admin-btn--sm admin-btn--danger"
                                         onClick={() => removeParagraph(si, pi)}>
                                         ✕
@@ -816,9 +882,11 @@ function mapSections(sections) {
     return sections.map(s => ({
         title: s.title ?? "",
         paragraphs: (s.paragraphs ?? []).map(p => ({
-            content: p.content ?? "",
-            images:  Array.isArray(p.images) ? p.images : [],
-            pendingImages: [],
+            content:           p.content          ?? "",
+            images:            Array.isArray(p.images) ? p.images : [],
+            pendingImages:     [],
+            display_mode:      p.display_mode      ?? "conteneur",
+            carousel_interval: p.carousel_interval ?? 4000,
         })),
     }));
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchTraces } from "../../api/traces.js";
 import CardTrace from "../card_trace/Card_trace";
 import SearchBar from "../searchBar/SearchBar";
@@ -22,9 +22,6 @@ export default function SectionTrace({ nombre_trace = Infinity, type = "" }) {
     const [showFilterInput, setShowFilterInput] = useState(false);
     const [language, setLanguage] = useState("");
     const [projectType, setProjectType] = useState(type);
-    const [viewMode, setViewMode] = useState("grid");
-    const [carouselIndex, setCarouselIndex] = useState(0);
-    const carouselRef = useRef(null);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -64,38 +61,9 @@ export default function SectionTrace({ nombre_trace = Infinity, type = "" }) {
         const matchesActiveFilters = activeFilters.every(filter =>
             searchableValues.some(value => value.includes(normalizeText(filter)))
         );
-
         return matchesLanguage && matchesActiveFilters;
     });
     const displayed = filteredTraces.slice(0, nombre_trace === Infinity ? filteredTraces.length : nombre_trace);
-
-    useEffect(() => {
-        const container = carouselRef.current;
-        if (!container || viewMode !== "carousel") return;
-        const handleScroll = () => {
-            const cardWidth = (container.firstElementChild?.offsetWidth ?? 320) + 20;
-            setCarouselIndex(Math.min(
-                Math.round(container.scrollLeft / cardWidth),
-                displayed.length - 1
-            ));
-        };
-        container.addEventListener("scroll", handleScroll, { passive: true });
-        return () => container.removeEventListener("scroll", handleScroll);
-    }, [viewMode, displayed.length]);
-
-    useEffect(() => {
-        setCarouselIndex(0);
-        if (carouselRef.current) carouselRef.current.scrollLeft = 0;
-    }, [viewMode, displayed.length]);
-
-    const scrollToIndex = (index) => {
-        const card = carouselRef.current?.children[index];
-        if (!card) return;
-        card.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
-        setCarouselIndex(index);
-    };
-    const handlePrev = () => scrollToIndex(Math.max(0, carouselIndex - 1));
-    const handleNext = () => scrollToIndex(Math.min(displayed.length - 1, carouselIndex + 1));
 
     const addFilter = (value) => {
         const trimmed = value.trim();
@@ -196,85 +164,26 @@ export default function SectionTrace({ nombre_trace = Infinity, type = "" }) {
                 </div>
             )}
 
-            <div id="vue-toggle-bar">
-                <button
-                    className={`vue-btn${viewMode === "grid" ? " vue-btn--active" : ""}`}
-                    onClick={() => setViewMode("grid")}
-                    aria-pressed={viewMode === "grid"}
-                >
-                    Conteneur
-                </button>
-                <button
-                    className={`vue-btn${viewMode === "carousel" ? " vue-btn--active" : ""}`}
-                    onClick={() => setViewMode("carousel")}
-                    aria-pressed={viewMode === "carousel"}
-                >
-                    Carrousel
-                </button>
-            </div>
-
-            <div id="conteneur_trace_wrapper">
-                {viewMode === "carousel" && displayed.length > 1 && (
-                    <button
-                        className="carousel-arrow carousel-arrow--prev"
-                        onClick={handlePrev}
-                        disabled={carouselIndex === 0}
-                        aria-label="Projet précédent"
-                    >
-                        ‹
-                    </button>
-                )}
-
-                <div
-                    id="conteneur_trace"
-                    className={viewMode === "carousel" ? "carousel-mode" : ""}
-                    ref={carouselRef}
-                >
-                    {tracesState.loading ? (
-                        <p className="trace-status">Chargement...</p>
-                    ) : tracesState.error ? (
-                        <p className="trace-status trace-status-error">{tracesState.error}</p>
-                    ) : displayed.length > 0 ? (
-                        displayed.map(trace => (
-                            <CardTrace
-                                key={trace.id}
-                                id={trace.id}
-                                title={trace.title}
-                                img={trace.img}
-                                tags={getCardTags(trace)}
-                                activeFilters={activeFilters}
-                            />
-                        ))
-                    ) : (
-                        <p className="trace-status">Aucun projet trouvé.</p>
-                    )}
-                </div>
-
-                {viewMode === "carousel" && displayed.length > 1 && (
-                    <button
-                        className="carousel-arrow carousel-arrow--next"
-                        onClick={handleNext}
-                        disabled={carouselIndex === displayed.length - 1}
-                        aria-label="Projet suivant"
-                    >
-                        ›
-                    </button>
-                )}
-            </div>
-
-            {viewMode === "carousel" && displayed.length > 1 && (
-                <div id="carousel-indicator">
-                    {displayed.length <= 12 && displayed.map((_, i) => (
-                        <button
-                            key={i}
-                            className={`carousel-dot${i === carouselIndex ? " carousel-dot--active" : ""}`}
-                            onClick={() => scrollToIndex(i)}
-                            aria-label={`Aller au projet ${i + 1}`}
+            <div id="conteneur_trace">
+                {tracesState.loading ? (
+                    <p className="trace-status">Chargement...</p>
+                ) : tracesState.error ? (
+                    <p className="trace-status trace-status-error">{tracesState.error}</p>
+                ) : displayed.length > 0 ? (
+                    displayed.map(trace => (
+                        <CardTrace
+                            key={trace.id}
+                            id={trace.id}
+                            title={trace.title}
+                            img={trace.img}
+                            tags={getCardTags(trace)}
+                            activeFilters={activeFilters}
                         />
-                    ))}
-                    <span className="carousel-counter">{carouselIndex + 1} / {displayed.length}</span>
-                </div>
-            )}
+                    ))
+                ) : (
+                    <p className="trace-status">Aucun projet trouvé.</p>
+                )}
+            </div>
         </section>
     );
 }

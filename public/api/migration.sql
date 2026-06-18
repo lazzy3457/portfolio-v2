@@ -93,24 +93,82 @@ CREATE TABLE IF NOT EXISTS `admin_user` (
 
 -- Si la table trace n'existe pas, la créer complètement
 CREATE TABLE IF NOT EXISTS `trace` (
-    `id`               INT AUTO_INCREMENT PRIMARY KEY,
-    `title`            VARCHAR(255) NOT NULL,
-    `description`      TEXT         DEFAULT NULL,
-    `img`              VARCHAR(255) DEFAULT NULL,
-    `img_presentation` JSON         DEFAULT NULL,
-    `date_debut`       DATE         DEFAULT NULL,
-    `date_fin`         DATE         DEFAULT NULL,
-    `context_id`       INT          DEFAULT NULL,
-    `created_at`       TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    `id`                INT  AUTO_INCREMENT PRIMARY KEY,
+    `title`             VARCHAR(255) NOT NULL,
+    `description`       TEXT         DEFAULT NULL,
+    `img`               VARCHAR(255) DEFAULT NULL,
+    `img_presentation`  JSON         DEFAULT NULL,
+    `date_debut`        DATE         DEFAULT NULL,
+    `date_fin`          DATE         DEFAULT NULL,
+    `context_id`        INT          DEFAULT NULL,
+    `display_mode`      VARCHAR(20)  NOT NULL DEFAULT 'conteneur',
+    `carousel_interval` INT          NOT NULL DEFAULT 4000,
+    `created_at`        TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (`context_id`) REFERENCES `trace_context`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Si la table existait déjà, ajouter les colonnes manquantes
-ALTER TABLE `trace`
-    ADD COLUMN IF NOT EXISTS `date_debut`  DATE DEFAULT NULL,
-    ADD COLUMN IF NOT EXISTS `date_fin`    DATE DEFAULT NULL,
-    ADD COLUMN IF NOT EXISTS `context_id`  INT  DEFAULT NULL,
-    ADD COLUMN IF NOT EXISTS `created_at`  TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+-- Si la table existait déjà, ajouter les colonnes manquantes.
+-- Cette forme fonctionne avec MySQL et MariaDB, contrairement à
+-- `ADD COLUMN IF NOT EXISTS` qui n'est pas accepté par toutes les versions.
+SET @migration_sql = IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trace' AND COLUMN_NAME = 'date_debut') = 0,
+    'ALTER TABLE `trace` ADD COLUMN `date_debut` DATE DEFAULT NULL',
+    'SET @migration_noop = 1'
+);
+PREPARE migration_stmt FROM @migration_sql;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
+
+SET @migration_sql = IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trace' AND COLUMN_NAME = 'date_fin') = 0,
+    'ALTER TABLE `trace` ADD COLUMN `date_fin` DATE DEFAULT NULL',
+    'SET @migration_noop = 1'
+);
+PREPARE migration_stmt FROM @migration_sql;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
+
+SET @migration_sql = IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trace' AND COLUMN_NAME = 'context_id') = 0,
+    'ALTER TABLE `trace` ADD COLUMN `context_id` INT DEFAULT NULL',
+    'SET @migration_noop = 1'
+);
+PREPARE migration_stmt FROM @migration_sql;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
+
+SET @migration_sql = IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trace' AND COLUMN_NAME = 'created_at') = 0,
+    'ALTER TABLE `trace` ADD COLUMN `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+    'SET @migration_noop = 1'
+);
+PREPARE migration_stmt FROM @migration_sql;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
+
+SET @migration_sql = IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trace' AND COLUMN_NAME = 'display_mode') = 0,
+    'ALTER TABLE `trace` ADD COLUMN `display_mode` VARCHAR(20) NOT NULL DEFAULT ''conteneur''',
+    'SET @migration_noop = 1'
+);
+PREPARE migration_stmt FROM @migration_sql;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
+
+SET @migration_sql = IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trace' AND COLUMN_NAME = 'carousel_interval') = 0,
+    'ALTER TABLE `trace` ADD COLUMN `carousel_interval` INT NOT NULL DEFAULT 4000',
+    'SET @migration_noop = 1'
+);
+PREPARE migration_stmt FROM @migration_sql;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
 
 -- Migration : remplir context_id depuis l'ancien champ `type` (si présent)
 -- Adapter selon les valeurs réelles dans ta BDD :
@@ -166,13 +224,35 @@ CREATE TABLE IF NOT EXISTS `trace_section` (
 -- --------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS `trace_paragraph` (
-    `id`         INT AUTO_INCREMENT PRIMARY KEY,
-    `section_id` INT  NOT NULL,
-    `position`   INT  NOT NULL DEFAULT 0,
-    `content`    TEXT DEFAULT NULL,
-    `images`     JSON DEFAULT NULL,
+    `id`                INT  AUTO_INCREMENT PRIMARY KEY,
+    `section_id`        INT  NOT NULL,
+    `position`          INT  NOT NULL DEFAULT 0,
+    `content`           TEXT DEFAULT NULL,
+    `images`            JSON DEFAULT NULL,
+    `display_mode`      VARCHAR(20) NOT NULL DEFAULT 'conteneur',
+    `carousel_interval` INT         NOT NULL DEFAULT 4000,
     FOREIGN KEY (`section_id`) REFERENCES `trace_section`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @migration_sql = IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trace_paragraph' AND COLUMN_NAME = 'display_mode') = 0,
+    'ALTER TABLE `trace_paragraph` ADD COLUMN `display_mode` VARCHAR(20) NOT NULL DEFAULT ''conteneur''',
+    'SET @migration_noop = 1'
+);
+PREPARE migration_stmt FROM @migration_sql;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
+
+SET @migration_sql = IF(
+    (SELECT COUNT(*) FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'trace_paragraph' AND COLUMN_NAME = 'carousel_interval') = 0,
+    'ALTER TABLE `trace_paragraph` ADD COLUMN `carousel_interval` INT NOT NULL DEFAULT 4000',
+    'SET @migration_noop = 1'
+);
+PREPARE migration_stmt FROM @migration_sql;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
 
 -- ============================================================
 -- Apprentissages Critiques (AC)

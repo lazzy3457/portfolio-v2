@@ -7,8 +7,6 @@ function normalizeText(value) {
 }
 
 export default function CardTrace({ img, title, tags, id, activeFilters = [] }) {
-    const tagsRef = useRef(null);
-
     const sortedTags = useMemo(() => {
         if (!Array.isArray(tags) || !tags.length) return [];
         if (!activeFilters.length) return tags;
@@ -21,44 +19,6 @@ export default function CardTrace({ img, title, tags, id, activeFilters = [] }) 
             return 0;
         });
     }, [tags, activeFilters]);
-
-    const [visibleCount, setVisibleCount] = useState(null);
-
-    useLayoutEffect(() => {
-        setVisibleCount(null);
-    }, [sortedTags]);
-
-    useLayoutEffect(() => {
-        if (visibleCount !== null) return;
-        if (!tagsRef.current || !sortedTags.length) {
-            setVisibleCount(sortedTags.length);
-            return;
-        }
-
-        const children = Array.from(tagsRef.current.children);
-        if (!children.length) { setVisibleCount(0); return; }
-
-        const rowTops = [];
-        for (const child of children) {
-            const top = child.offsetTop;
-            if (!rowTops.includes(top)) rowTops.push(top);
-            if (rowTops.length > 2) break;
-        }
-
-        if (rowTops.length <= 2) {
-            setVisibleCount(sortedTags.length);
-            return;
-        }
-
-        const thirdRowTop = rowTops[2];
-        const overflowStart = children.findIndex(c => c.offsetTop >= thirdRowTop);
-        setVisibleCount(overflowStart > 0 ? overflowStart : sortedTags.length);
-    }, [sortedTags, visibleCount]);
-
-    const displayTags = visibleCount === null ? sortedTags : sortedTags.slice(0, visibleCount);
-    const overflowCount = visibleCount !== null && visibleCount < sortedTags.length
-        ? sortedTags.length - visibleCount
-        : 0;
 
     return (
         <article className="card_trace">
@@ -73,18 +33,72 @@ export default function CardTrace({ img, title, tags, id, activeFilters = [] }) 
                 </div>
                 <div className="card-info">
                     <h3>{title}</h3>
-                    {sortedTags.length > 0 && (
-                        <div className="tags" ref={tagsRef}>
-                            {displayTags.map((tagName, index) => (
-                                <span key={`${tagName}-${index}`} className="tag">{tagName}</span>
-                            ))}
-                            {overflowCount > 0 && (
-                                <span className="tag tag-overflow">+{overflowCount}</span>
-                            )}
-                        </div>
-                    )}
+                    {sortedTags.length > 0 && <TagList tags={sortedTags} />}
                 </div>
             </Link>
         </article>
+    );
+}
+
+function TagList({ tags }) {
+    const measureRef = useRef(null);
+    const [visibleCount, setVisibleCount] = useState(tags.length);
+
+    useLayoutEffect(() => {
+        const container = measureRef.current;
+        if (!container) return;
+
+        let frameId;
+        const measure = () => {
+            const children = Array.from(container.children);
+            const rowTops = [];
+
+            for (const child of children) {
+                const top = child.offsetTop;
+                if (!rowTops.includes(top)) rowTops.push(top);
+                if (rowTops.length > 2) break;
+            }
+
+            const thirdRowTop = rowTops[2];
+            const nextCount = thirdRowTop === undefined
+                ? tags.length
+                : children.findIndex(child => child.offsetTop >= thirdRowTop);
+
+            setVisibleCount(current => current === nextCount ? current : nextCount);
+        };
+        const scheduleMeasure = () => {
+            cancelAnimationFrame(frameId);
+            frameId = requestAnimationFrame(measure);
+        };
+
+        scheduleMeasure();
+        const observer = new ResizeObserver(scheduleMeasure);
+        observer.observe(container);
+
+        return () => {
+            cancelAnimationFrame(frameId);
+            observer.disconnect();
+        };
+    }, [tags]);
+
+    const displayTags = tags.slice(0, visibleCount);
+    const overflowCount = tags.length - visibleCount;
+
+    return (
+        <div className="tags-shell">
+            <div className="tags tags--measure" ref={measureRef} aria-hidden="true">
+                {tags.map((tagName, index) => (
+                    <span key={`${tagName}-${index}`} className="tag">{tagName}</span>
+                ))}
+            </div>
+            <div className="tags">
+                {displayTags.map((tagName, index) => (
+                    <span key={`${tagName}-${index}`} className="tag">{tagName}</span>
+                ))}
+                {overflowCount > 0 && (
+                    <span className="tag tag-overflow">+{overflowCount}</span>
+                )}
+            </div>
+        </div>
     );
 }
