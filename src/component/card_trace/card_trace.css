@@ -73,3 +73,9 @@
     font-family: var(--audiowide-font);
     white-space: nowrap;
 }
+
+.tag-overflow {
+    background-color: #1e1f2e;
+    color: rgba(255, 255, 255, 0.55);
+    letter-spacing: 0.02em;
+}

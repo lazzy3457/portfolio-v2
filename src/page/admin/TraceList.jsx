@@ -66,7 +66,7 @@ export default function TraceList() {
                         <tr key={trace.id}>
                             <td>{trace.id}</td>
                             <td>
-                                <Link to={`/trace/${trace.id}`} target="_blank" className="admin-link">
+                                <Link to={`/trace/${trace.id}`} className="admin-link">
                                     {trace.title}
                                 </Link>
                             </td>

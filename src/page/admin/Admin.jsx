@@ -48,7 +48,7 @@ function Sidebar() {
             <h2>Admin</h2>
             <Link to="/admin">Traces</Link>
             <Link to="/admin/references">Référentiels</Link>
-            <Link to="/" target="_blank" rel="noopener noreferrer">Voir le site</Link>
+            <Link to="/">Voir le site</Link>
             <button onClick={handleLogout}>Déconnexion</button>
         </nav>
     );
