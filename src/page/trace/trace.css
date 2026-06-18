@@ -101,11 +101,21 @@
 
 #presentation_trace .conteneur_paragraphe img {
     width: 100%;
-    flex-basis: 50%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 #presentation_trace .conteneur_img {
-    flex: 1;
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-auto-rows: 230px;
+    gap: 8px;
+    width: fit-content;
+    max-width: 600px;
+    max-height: 480px;
+    overflow: hidden;
 }
 
 #presentation_trace .conteneur_paragraphe p {
@@ -130,8 +140,14 @@
         width: 100%;
     }
 
-    #presentation_trace .conteneur_paragraphe p.paragraphe,
+    #presentation_trace .conteneur_paragraphe p.paragraphe {
+        width: 100%;
+    }
+
     #presentation_trace .conteneur_img {
         width: 100%;
+        max-width: none;
+        max-height: none;
+        grid-auto-rows: 180px;
     }
 }
