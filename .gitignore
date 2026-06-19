@@ -1,3 +1,9 @@
+# Environment
+.env
+.env.local
+.env.production
+public/api/.env
+
 # Logs
 logs
 *.log
