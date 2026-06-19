@@ -15,6 +15,23 @@ function load_env(): void {
     }
 }
 
+function send_cached_json(array $rows, int $max_age = 3600): void {
+    $json = json_encode($rows);
+    $etag = '"' . md5($json) . '"';
+    header('Cache-Control: public, max-age=' . $max_age);
+    header('ETag: ' . $etag);
+
+    if (
+        isset($_SERVER['HTTP_IF_NONE_MATCH']) &&
+        $_SERVER['HTTP_IF_NONE_MATCH'] === $etag
+    ) {
+        http_response_code(304);
+        return;
+    }
+
+    echo $json;
+}
+
 function get_pdo(): PDO {
     static $pdo = null;
     if ($pdo !== null) return $pdo;

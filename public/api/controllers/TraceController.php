@@ -68,11 +68,42 @@ function list_traces(): void {
     $stmt->execute($params);
     $traces = $stmt->fetchAll();
 
+    if (empty($traces)) {
+        echo json_encode([]);
+        return;
+    }
+
+    $ids = array_column($traces, 'id');
+
+    // 3 requêtes batch au lieu de 3×N requêtes individuelles
+    $languages     = batch_by_trace($pdo, $ids, "
+        SELECT tl.trace_id, l.id, l.slug, l.label, l.color
+        FROM language l
+        JOIN trace_language tl ON tl.language_id = l.id
+        WHERE tl.trace_id IN (%s)
+        ORDER BY l.label
+    ");
+    $skills        = batch_by_trace($pdo, $ids, "
+        SELECT ts.trace_id, s.id, s.slug, s.label, s.category
+        FROM skill s
+        JOIN trace_skill ts ON ts.skill_id = s.id
+        WHERE ts.trace_id IN (%s)
+        ORDER BY s.category, s.label
+    ");
+    $project_types = batch_by_trace($pdo, $ids, "
+        SELECT tpt.trace_id, pt.id, pt.slug, pt.label, pt.icon
+        FROM project_type pt
+        JOIN trace_project_type tpt ON tpt.project_type_id = pt.id
+        WHERE tpt.trace_id IN (%s)
+        ORDER BY pt.label
+    ");
+
     foreach ($traces as &$t) {
+        $tid = $t['id'];
         $t['img_presentation'] = decode_json($t['img_presentation']);
-        $t['languages']        = fetch_trace_languages($pdo, $t['id']);
-        $t['skills']           = fetch_trace_skills($pdo, $t['id']);
-        $t['project_types']    = fetch_trace_project_types($pdo, $t['id']);
+        $t['languages']        = $languages[$tid]     ?? [];
+        $t['skills']           = $skills[$tid]        ?? [];
+        $t['project_types']    = $project_types[$tid] ?? [];
     }
 
     echo json_encode($traces);
@@ -110,7 +141,23 @@ function get_trace(int $id): void {
 }
 
 // ----------------------------------------------------------------
-// Helpers de jointure
+// Batch loader : regroupe les relations par trace_id en 1 requête
+// ----------------------------------------------------------------
+function batch_by_trace(PDO $pdo, array $ids, string $sql_tpl): array {
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare(sprintf($sql_tpl, $placeholders));
+    $stmt->execute($ids);
+    $grouped = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $tid = $row['trace_id'];
+        unset($row['trace_id']);
+        $grouped[$tid][] = $row;
+    }
+    return $grouped;
+}
+
+// ----------------------------------------------------------------
+// Helpers de jointure (utilisés pour le détail d'une trace)
 // ----------------------------------------------------------------
 function fetch_trace_languages(PDO $pdo, int $trace_id): array {
     $stmt = $pdo->prepare("
@@ -158,19 +205,29 @@ function fetch_trace_sections(PDO $pdo, int $trace_id): array {
     $stmt->execute(['id' => $trace_id]);
     $sections = $stmt->fetchAll();
 
+    if (empty($sections)) return [];
+
+    // 1 requête batch pour tous les paragraphes au lieu de 1 par section
+    $sid_list     = array_column($sections, 'id');
+    $placeholders = implode(',', array_fill(0, count($sid_list), '?'));
+    $pstmt        = $pdo->prepare("
+        SELECT id, section_id, position, content, images, display_mode, carousel_interval
+        FROM trace_paragraph
+        WHERE section_id IN ($placeholders)
+        ORDER BY section_id, position
+    ");
+    $pstmt->execute($sid_list);
+
+    $by_section = [];
+    foreach ($pstmt->fetchAll() as $p) {
+        $p['images'] = decode_json($p['images']);
+        $sid = $p['section_id'];
+        unset($p['section_id']);
+        $by_section[$sid][] = $p;
+    }
+
     foreach ($sections as &$section) {
-        $pstmt = $pdo->prepare("
-            SELECT id, position, content, images, display_mode, carousel_interval
-            FROM trace_paragraph
-            WHERE section_id = :sid
-            ORDER BY position
-        ");
-        $pstmt->execute(['sid' => $section['id']]);
-        $paragraphs = $pstmt->fetchAll();
-        foreach ($paragraphs as &$p) {
-            $p['images'] = decode_json($p['images']);
-        }
-        $section['paragraphs'] = $paragraphs;
+        $section['paragraphs'] = $by_section[$section['id']] ?? [];
     }
 
     return $sections;

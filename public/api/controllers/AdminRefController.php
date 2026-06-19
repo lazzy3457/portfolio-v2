@@ -46,7 +46,7 @@ function handle_admin_project_types(): void {
 function handle_acs_list(): void {
     $pdo  = get_pdo();
     $rows = $pdo->query('SELECT id, slug, title FROM ac ORDER BY title')->fetchAll();
-    echo json_encode($rows);
+    send_cached_json($rows);
 }
 
 function handle_admin_acs(): void {
