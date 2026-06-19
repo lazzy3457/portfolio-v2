@@ -176,6 +176,59 @@ function ContentTrace({ section, id, isIntro }) {
 }
 
 function TraceParagraph({ paragraph, id }) {
+  const type = paragraph.type ?? 'paragraphe';
+  if (type === 'video') return <VideoBlock paragraph={paragraph} />;
+  if (type === 'lien') return <LinkBlock paragraph={paragraph} />;
+  return <ParagraphBlock paragraph={paragraph} id={id} />;
+}
+
+function VideoBlock({ paragraph }) {
+  const url = paragraph.video_url;
+  if (!url) return null;
+
+  const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&?/\s]+)/);
+  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+
+  if (ytMatch || vimeoMatch) {
+    const embedUrl = ytMatch
+      ? `https://www.youtube.com/embed/${ytMatch[1]}`
+      : `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    return (
+      <div className="trace-video-block">
+        <div className="trace-video-wrap">
+          <iframe
+            src={embedUrl}
+            title="Vidéo"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="trace-video-block">
+      <video controls src={url} className="trace-video-direct" />
+    </div>
+  );
+}
+
+function LinkBlock({ paragraph }) {
+  const { link_url, link_label } = paragraph;
+  if (!link_url) return null;
+
+  return (
+    <div className="trace-link-block">
+      <a href={link_url} target="_blank" rel="noopener noreferrer" className="trace-link-btn">
+        <span className="trace-link-label">{link_label || link_url}</span>
+        <span className="trace-link-icon">→</span>
+      </a>
+    </div>
+  );
+}
+
+function ParagraphBlock({ paragraph, id }) {
   const images = getImages(paragraph.images);
   const displayMode = paragraph.display_mode ?? 'conteneur';
   const carouselInterval = paragraph.carousel_interval ?? 4000;
@@ -272,10 +325,14 @@ function getSections(trace) {
     return trace.sections.map(section => ({
       title: section.title ?? "",
       paragraphs: (section.paragraphs ?? []).map(paragraph => ({
+        type: paragraph.type ?? "paragraphe",
         text: paragraph.content ?? "",
         images: getImages(paragraph.images),
         display_mode: paragraph.display_mode ?? "conteneur",
         carousel_interval: paragraph.carousel_interval ?? 4000,
+        video_url: paragraph.video_url ?? null,
+        link_url: paragraph.link_url ?? null,
+        link_label: paragraph.link_label ?? null,
       })),
     }));
   }

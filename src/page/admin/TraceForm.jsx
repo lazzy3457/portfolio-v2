@@ -226,9 +226,20 @@ export default function TraceForm() {
     const updateSection = (si, key, value) =>
         set('sections', form.sections.map((s, i) => i === si ? { ...s, [key]: value } : s));
 
-    const addParagraph = (si) => {
+    const addBlock = (si, type = 'paragraphe') => {
+        const block = {
+            type,
+            content: "",
+            images: [],
+            pendingImages: [],
+            display_mode: "conteneur",
+            carousel_interval: 4000,
+            video_url: "",
+            link_url: "",
+            link_label: "",
+        };
         const sections = form.sections.map((s, i) =>
-            i === si ? { ...s, paragraphs: [...s.paragraphs, { content: "", images: [], pendingImages: [], display_mode: "conteneur", carousel_interval: 4000 }] } : s
+            i === si ? { ...s, paragraphs: [...s.paragraphs, block] } : s
         );
         set('sections', sections);
     };
@@ -369,10 +380,14 @@ export default function TraceForm() {
         sections: sourceForm.sections.map(s => ({
             title: s.title,
             paragraphs: s.paragraphs.map(p => ({
+                type: p.type ?? 'paragraphe',
                 content: p.content,
                 images: p.images ?? [],
                 display_mode: p.display_mode ?? "conteneur",
                 carousel_interval: p.carousel_interval ?? 4000,
+                video_url: p.video_url ?? null,
+                link_url: p.link_url ?? null,
+                link_label: p.link_label ?? null,
             })),
         })),
     });
@@ -418,10 +433,14 @@ export default function TraceForm() {
                             images.push(filename);
                         }
                         paragraphs.push({
+                            type: para.type ?? 'paragraphe',
                             content: para.content,
                             images,
                             display_mode: para.display_mode ?? "conteneur",
                             carousel_interval: para.carousel_interval ?? 4000,
+                            video_url: para.video_url ?? null,
+                            link_url: para.link_url ?? null,
+                            link_label: para.link_label ?? null,
                         });
                     }
                     resolvedSections.push({ title: section.title, paragraphs });
@@ -724,56 +743,113 @@ export default function TraceForm() {
                                 </button>
                             </div>
 
-                            {section.paragraphs.map((para, pi) => (
-                                <div key={pi} className="admin-paragraph-block">
-                                    <textarea
-                                        rows={3}
-                                        placeholder="Paragraphe…"
-                                        value={para.content}
-                                        onChange={e => updateParagraph(si, pi, 'content', e.target.value)}
-                                    />
-                                    <ImageDropZone
-                                        multiple={true}
-                                        images={paragraphPreviews(para)}
-                                        onFiles={files => handleParagraphFiles(si, pi, files)}
-                                        onRemove={key => removeParagraphImage(si, pi, key)}
-                                    />
-                                    <div className="admin-row admin-para-display">
-                                        <label>
-                                            Affichage images
-                                            <select
-                                                value={para.display_mode ?? 'conteneur'}
-                                                onChange={e => updateParagraph(si, pi, 'display_mode', e.target.value)}
-                                            >
-                                                <option value="conteneur">Conteneur</option>
-                                                <option value="carousel">Carrousel</option>
-                                            </select>
-                                        </label>
-                                        {(para.display_mode ?? 'conteneur') === 'carousel' && (
+                            {section.paragraphs.map((para, pi) => {
+                                const blockType = para.type ?? 'paragraphe';
+                                return (
+                                    <div key={pi} className="admin-paragraph-block">
+                                        <div className="admin-block-header">
+                                            <span className="admin-block-type-badge">
+                                                {blockType === 'video' ? '🎬 Vidéo' : blockType === 'lien' ? '🔗 Lien' : '¶ Paragraphe'}
+                                            </span>
+                                            <button type="button" className="admin-btn admin-btn--sm admin-btn--danger"
+                                                onClick={() => removeParagraph(si, pi)}>
+                                                ✕
+                                            </button>
+                                        </div>
+
+                                        {blockType === 'paragraphe' && (
+                                            <>
+                                                <textarea
+                                                    rows={3}
+                                                    placeholder="Paragraphe…"
+                                                    value={para.content}
+                                                    onChange={e => updateParagraph(si, pi, 'content', e.target.value)}
+                                                />
+                                                <ImageDropZone
+                                                    multiple={true}
+                                                    images={paragraphPreviews(para)}
+                                                    onFiles={files => handleParagraphFiles(si, pi, files)}
+                                                    onRemove={key => removeParagraphImage(si, pi, key)}
+                                                />
+                                                <div className="admin-row admin-para-display">
+                                                    <label>
+                                                        Affichage images
+                                                        <select
+                                                            value={para.display_mode ?? 'conteneur'}
+                                                            onChange={e => updateParagraph(si, pi, 'display_mode', e.target.value)}
+                                                        >
+                                                            <option value="conteneur">Conteneur</option>
+                                                            <option value="carousel">Carrousel</option>
+                                                        </select>
+                                                    </label>
+                                                    {(para.display_mode ?? 'conteneur') === 'carousel' && (
+                                                        <label>
+                                                            Intervalle (s)
+                                                            <input
+                                                                type="number"
+                                                                min="0.5"
+                                                                max="30"
+                                                                step="0.5"
+                                                                value={(para.carousel_interval ?? 4000) / 1000}
+                                                                onChange={e => updateParagraph(si, pi, 'carousel_interval', Math.round(parseFloat(e.target.value) * 1000))}
+                                                            />
+                                                        </label>
+                                                    )}
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {blockType === 'video' && (
                                             <label>
-                                                Intervalle (s)
+                                                URL de la vidéo
                                                 <input
-                                                    type="number"
-                                                    min="0.5"
-                                                    max="30"
-                                                    step="0.5"
-                                                    value={(para.carousel_interval ?? 4000) / 1000}
-                                                    onChange={e => updateParagraph(si, pi, 'carousel_interval', Math.round(parseFloat(e.target.value) * 1000))}
+                                                    type="url"
+                                                    placeholder="https://youtube.com/watch?v=…"
+                                                    value={para.video_url ?? ""}
+                                                    onChange={e => updateParagraph(si, pi, 'video_url', e.target.value)}
                                                 />
                                             </label>
                                         )}
-                                    </div>
-                                    <button type="button" className="admin-btn admin-btn--sm admin-btn--danger"
-                                        onClick={() => removeParagraph(si, pi)}>
-                                        ✕
-                                    </button>
-                                </div>
-                            ))}
 
-                            <button type="button" className="admin-btn admin-btn--sm"
-                                onClick={() => addParagraph(si)}>
-                                + Paragraphe
-                            </button>
+                                        {blockType === 'lien' && (
+                                            <>
+                                                <label>
+                                                    Libellé
+                                                    <input
+                                                        placeholder="Voir le projet…"
+                                                        value={para.link_label ?? ""}
+                                                        onChange={e => updateParagraph(si, pi, 'link_label', e.target.value)}
+                                                    />
+                                                </label>
+                                                <label>
+                                                    URL
+                                                    <input
+                                                        type="url"
+                                                        placeholder="https://…"
+                                                        value={para.link_url ?? ""}
+                                                        onChange={e => updateParagraph(si, pi, 'link_url', e.target.value)}
+                                                    />
+                                                </label>
+                                            </>
+                                        )}
+                                    </div>
+                                );
+                            })}
+
+                            <div className="admin-add-block-row">
+                                <button type="button" className="admin-btn admin-btn--sm"
+                                    onClick={() => addBlock(si, 'paragraphe')}>
+                                    + Paragraphe
+                                </button>
+                                <button type="button" className="admin-btn admin-btn--sm"
+                                    onClick={() => addBlock(si, 'video')}>
+                                    + Vidéo
+                                </button>
+                                <button type="button" className="admin-btn admin-btn--sm"
+                                    onClick={() => addBlock(si, 'lien')}>
+                                    + Lien
+                                </button>
+                            </div>
                         </div>
                     ))}
 
@@ -882,11 +958,15 @@ function mapSections(sections) {
     return sections.map(s => ({
         title: s.title ?? "",
         paragraphs: (s.paragraphs ?? []).map(p => ({
+            type:              p.type              ?? "paragraphe",
             content:           p.content          ?? "",
             images:            Array.isArray(p.images) ? p.images : [],
             pendingImages:     [],
             display_mode:      p.display_mode      ?? "conteneur",
             carousel_interval: p.carousel_interval ?? 4000,
+            video_url:         p.video_url         ?? "",
+            link_url:          p.link_url          ?? "",
+            link_label:        p.link_label        ?? "",
         })),
     }));
 }

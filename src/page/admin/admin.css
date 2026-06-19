@@ -248,6 +248,27 @@
     font-size: 0.9rem;
 }
 
+.admin-block-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.admin-block-type-badge {
+    font-size: 0.8rem;
+    color: #aaa;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+}
+
+.admin-add-block-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding-top: 0.25rem;
+}
+
 .admin-form-actions {
     display: flex;
     justify-content: flex-end;

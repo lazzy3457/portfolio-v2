@@ -211,7 +211,8 @@ function fetch_trace_sections(PDO $pdo, int $trace_id): array {
     $sid_list     = array_column($sections, 'id');
     $placeholders = implode(',', array_fill(0, count($sid_list), '?'));
     $pstmt        = $pdo->prepare("
-        SELECT id, section_id, position, content, images, display_mode, carousel_interval
+        SELECT id, section_id, position, type, content, images, display_mode, carousel_interval,
+               video_url, link_url, link_label
         FROM trace_paragraph
         WHERE section_id IN ($placeholders)
         ORDER BY section_id, position

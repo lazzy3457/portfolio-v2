@@ -161,8 +161,10 @@ function sync_sections(PDO $pdo, int $trace_id, array $sections): void {
 
     $ins_s = $pdo->prepare('INSERT INTO trace_section (trace_id, position, title) VALUES (:tid, :pos, :title)');
     $ins_p = $pdo->prepare('
-        INSERT INTO trace_paragraph (section_id, position, content, images, display_mode, carousel_interval)
-        VALUES (:sid, :pos, :content, :images, :display_mode, :carousel_interval)
+        INSERT INTO trace_paragraph
+            (section_id, position, type, content, images, display_mode, carousel_interval, video_url, link_url, link_label)
+        VALUES
+            (:sid, :pos, :type, :content, :images, :display_mode, :carousel_interval, :video_url, :link_url, :link_label)
     ');
 
     foreach ($sections as $si => $section) {
@@ -170,14 +172,20 @@ function sync_sections(PDO $pdo, int $trace_id, array $sections): void {
         $section_id = (int) $pdo->lastInsertId();
 
         foreach ($section['paragraphs'] ?? [] as $pi => $para) {
+            $raw_type = $para['type'] ?? 'paragraphe';
+            $block_type = in_array($raw_type, ['paragraphe', 'video', 'lien']) ? $raw_type : 'paragraphe';
             $raw_mode = $para['display_mode'] ?? 'conteneur';
             $ins_p->execute([
-                'sid'              => $section_id,
-                'pos'              => $pi,
-                'content'          => $para['content'] ?? null,
-                'images'           => encode_json_nullable($para['images'] ?? null),
-                'display_mode'     => in_array($raw_mode, ['conteneur', 'carousel']) ? $raw_mode : 'conteneur',
+                'sid'               => $section_id,
+                'pos'               => $pi,
+                'type'              => $block_type,
+                'content'           => $para['content'] ?? null,
+                'images'            => encode_json_nullable($para['images'] ?? null),
+                'display_mode'      => in_array($raw_mode, ['conteneur', 'carousel']) ? $raw_mode : 'conteneur',
                 'carousel_interval' => max(500, min(30000, intval($para['carousel_interval'] ?? 4000))),
+                'video_url'         => nullable_string($para['video_url'] ?? null),
+                'link_url'          => nullable_string($para['link_url'] ?? null),
+                'link_label'        => nullable_string($para['link_label'] ?? null),
             ]);
         }
     }
@@ -295,17 +303,9 @@ function handle_admin_upload(int $trace_id): void {
 }
 
 function safe_upload_filename(string $dir, string $original_name, string $ext): string {
-    $base = pathinfo($original_name, PATHINFO_FILENAME);
-    $base = preg_replace('/[^a-zA-Z0-9_-]+/', '-', $base);
-    $base = trim($base, '-');
-    if ($base === '') $base = 'image';
-
-    $filename = "$base.$ext";
-    $i = 1;
-    while (file_exists("$dir/$filename")) {
-        $filename = "$base-$i.$ext";
-        $i++;
-    }
+    do {
+        $filename = time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+    } while (file_exists("$dir/$filename"));
     return $filename;
 }
 
